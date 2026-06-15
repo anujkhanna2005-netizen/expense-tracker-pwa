@@ -1,0 +1,187 @@
+.settingsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+  padding-left: 4px;
+}
+
+.dangerText {
+  color: var(--danger);
+}
+
+.settingCard {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.settingInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.settingIconWrapper {
+  width: 40px;
+  height: 40px;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.dangerIcon {
+  color: var(--danger);
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.settingName {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.settingDesc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Toggle Switch Styles */
+.toggleBtn {
+  width: 48px;
+  height: 26px;
+  background-color: var(--border-color);
+  border-radius: 13px;
+  position: relative;
+  transition: background-color 0.2s;
+  padding: 0;
+}
+
+.toggleActive {
+  background-color: var(--accent-primary);
+}
+
+.toggleKnob {
+  width: 22px;
+  height: 22px;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.toggleActive .toggleKnob {
+  transform: translateX(22px);
+}
+
+/* Action Buttons */
+.actionBtn {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.actionBtn:hover {
+  background-color: var(--border-color);
+}
+
+.dangerBtn {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.dangerBtn:hover {
+  background-color: var(--danger);
+  color: white;
+}
+
+.footerInfo {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px dashed var(--border-color);
+}
+
+.footerInfo p {
+  margin-bottom: 4px;
+}
+
+@media (max-width: 600px) {
+  .settingCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .actionBtn, .dangerBtn {
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  
+  .toggleBtn {
+    align-self: flex-end;
+    margin-top: -30px; /* Pull it up next to the title text */
+  }
+}
+.privacyBadge { margin-top: 12px !important; color: var(--accent-primary) !important; font-weight: 500; font-size: 14px; background-color: var(--bg-tertiary); padding: 8px 16px; border-radius: var(--radius-full); display: inline-block; }
