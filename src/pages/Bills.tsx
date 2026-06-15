@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { formatCurrency, formatCompactCurrency } from '../utils/format';
-import { CheckCircle2, Circle, Calendar, Bell, Plus, X, Trash2, Edit2 } from 'lucide-react';
+import { CheckCircle2, Circle, Calendar, Plus, X, Trash2, Edit2 } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import styles from './Bills.module.css';
 

@@ -26,10 +26,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
-  const handleQuickAdd = () => {
-    setIsQuickAddOpen(true);
-  };
-
   return (
     <div className={styles.layout}>
       {/* Sidebar for Desktop */}

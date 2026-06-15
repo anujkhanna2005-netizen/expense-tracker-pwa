@@ -85,7 +85,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const defaultExpensesData: Expense[] = [
             { id: 'exp_1', amount: 25000, categoryId: 'cat_rent', date: today, notes: 'Rent', paymentMethod: 'Bank Transfer', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
             { id: 'exp_2', amount: 4500, categoryId: 'cat_groceries', date: today, notes: 'Groceries', paymentMethod: 'UPI', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-            { id: 'exp_3', amount: 2000, categoryId: 'cat_fuel', date: today, notes: 'Petrol', paymentMethod: 'Card', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+            { id: 'exp_3', amount: 2000, categoryId: 'cat_fuel', date: today, notes: 'Petrol', paymentMethod: 'Debit Card', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
             { id: 'exp_4', amount: 350, categoryId: 'cat_food', date: today, notes: 'Coffee', paymentMethod: 'UPI', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
             { id: 'exp_5', amount: 500, categoryId: 'cat_misc', date: today, notes: 'Laundry', paymentMethod: 'Cash', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
           ];
