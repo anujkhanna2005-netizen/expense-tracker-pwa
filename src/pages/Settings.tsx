@@ -2,12 +2,14 @@ import React, { useRef, useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { Moon, Sun, Download, Upload, RotateCcw, Tags, FileJson } from 'lucide-react';
 import ManageCategoriesModal from '../components/ManageCategoriesModal';
+import SetBudgetModal from '../components/SetBudgetModal';
 import styles from './Settings.module.css';
 
 const Settings: React.FC = () => {
   const { settings, updateSettings, resetData, expenses, categories, bills, goals } = useData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isManageCatsOpen, setIsManageCatsOpen] = useState(false);
+  const [isSetBudgetOpen, setIsSetBudgetOpen] = useState(false);
 
   const toggleDarkMode = () => {
     updateSettings({ darkMode: !settings.darkMode });
@@ -128,6 +130,24 @@ const Settings: React.FC = () => {
             Manage
           </button>
         </div>
+
+        <div className={styles.settingCard}>
+          <div className={styles.settingInfo}>
+            <div className={styles.settingIconWrapper}>
+              <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{settings.currency}</span>
+            </div>
+            <div>
+              <h3 className={styles.settingName}>Monthly Budget</h3>
+              <p className={styles.settingDesc}>Set your monthly spending limit</p>
+            </div>
+          </div>
+          <button 
+            className={styles.actionBtn} 
+            onClick={() => setIsSetBudgetOpen(true)}
+          >
+            {settings.monthlyBudgetLimit ? `${settings.currency} ${settings.monthlyBudgetLimit}` : 'Set Budget'}
+          </button>
+        </div>
       </div>
 
       <div className={styles.section}>
@@ -199,6 +219,11 @@ const Settings: React.FC = () => {
       <ManageCategoriesModal 
         isOpen={isManageCatsOpen} 
         onClose={() => setIsManageCatsOpen(false)} 
+      />
+
+      <SetBudgetModal
+        isOpen={isSetBudgetOpen}
+        onClose={() => setIsSetBudgetOpen(false)}
       />
     </div>
   );
