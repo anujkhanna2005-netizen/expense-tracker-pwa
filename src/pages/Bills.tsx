@@ -186,8 +186,8 @@ const Bills: React.FC = () => {
         ) : (
           <div className={styles.emptyState}>
             <Calendar size={48} className={styles.emptyIcon} />
-            <h3>No bills added yet.</h3>
-            <p>Add your first recurring payment.</p>
+            <h3>No bills added</h3>
+            <p>Keep track of recurring payments and due dates.</p>
             <button className={styles.emptyStateBtn} onClick={() => setShowAddForm(true)}>Add Bill</button>
           </div>
         )}

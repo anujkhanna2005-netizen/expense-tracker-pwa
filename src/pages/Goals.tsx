@@ -169,8 +169,8 @@ const Goals: React.FC = () => {
         ) : (
           <div className={styles.emptyState}>
             <Target size={48} className={styles.emptyIcon} />
-            <h3>Start saving for something important.</h3>
-            <p>Set a goal for a new laptop, emergency fund, or vacation.</p>
+            <h3>No savings goals yet</h3>
+            <p>Create a goal and start saving toward something important.</p>
             <button className={styles.emptyStateBtn} onClick={() => setShowAddForm(true)}>Add Goal</button>
           </div>
         )}

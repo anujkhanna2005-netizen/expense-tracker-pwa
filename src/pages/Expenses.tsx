@@ -153,8 +153,8 @@ const Expenses: React.FC = () => {
         ) : (
           <div className={styles.emptyState}>
             <ReceiptText size={48} className={styles.emptyIcon} style={{ margin: '0 auto 16px', color: 'var(--text-muted)' }} />
-            <h3>No expenses recorded yet.</h3>
-            <p>Start tracking your spending today.</p>
+            <h3>No expenses recorded yet</h3>
+            <p>Start tracking your spending by adding your first expense.</p>
             <button className={styles.emptyStateBtn} onClick={() => window.dispatchEvent(new Event('openAddExpense'))} style={{ marginTop: '16px', backgroundColor: 'var(--accent-primary)', color: 'white', border: 'none', padding: '10px 20px', borderRadius: 'var(--radius-md)', fontWeight: 500, cursor: 'pointer' }}>
               Add Expense
             </button>

@@ -31,6 +31,7 @@ interface DataContextType {
   resetData: () => void;
   
   isLoading: boolean;
+  isFirstLaunch: boolean;
 }
 
 const defaultCategories: Category[] = [
@@ -65,44 +66,36 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [splits, setSplits] = useState<Split[]>([]);
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFirstLaunch, setIsFirstLaunch] = useState(true);
 
   // Initialize data
   useEffect(() => {
     const loadData = async () => {
       try {
-        const hasSeededV2 = await localforage.getItem<boolean>('demo_v2_loaded');
+        const appDataVersion = await localforage.getItem<number>('appDataVersion');
         
-        if (!hasSeededV2) {
+        if (!appDataVersion || appDataVersion < 2) {
+          // Clear old demo data but preserve categories if they exist
+          const existingCategories = await localforage.getItem<Category[]>('categories');
           await localforage.clear();
           
-          const defaultGoalsData: Goal[] = [
-            { id: 'goal_laptop', name: 'New Laptop', targetAmount: 120000, currentAmount: 45000, createdAt: new Date().toISOString() },
-            { id: 'goal_vacation', name: 'Goa Trip', targetAmount: 40000, currentAmount: 15000, createdAt: new Date().toISOString() },
-            { id: 'goal_emergency', name: 'Emergency Fund', targetAmount: 500000, currentAmount: 100000, createdAt: new Date().toISOString() }
-          ];
-
-          const today = new Date().toISOString().split('T')[0];
-          const defaultExpensesData: Expense[] = [
-            { id: 'exp_1', amount: 25000, categoryId: 'cat_rent', date: today, notes: 'Rent', paymentMethod: 'Bank Transfer', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-            { id: 'exp_2', amount: 4500, categoryId: 'cat_groceries', date: today, notes: 'Groceries', paymentMethod: 'UPI', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-            { id: 'exp_3', amount: 2000, categoryId: 'cat_fuel', date: today, notes: 'Petrol', paymentMethod: 'Debit Card', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-            { id: 'exp_4', amount: 350, categoryId: 'cat_food', date: today, notes: 'Coffee', paymentMethod: 'UPI', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-            { id: 'exp_5', amount: 500, categoryId: 'cat_misc', date: today, notes: 'Laundry', paymentMethod: 'Cash', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-          ];
-
-          const defaultBillsData: Bill[] = [
-            { id: 'bill_1', name: 'Electricity', amount: 1500, categoryId: 'cat_elec', dueDate: today, isPaid: false, reminderEnabled: true },
-            { id: 'bill_2', name: 'WiFi', amount: 999, categoryId: 'cat_internet', dueDate: today, isPaid: true, reminderEnabled: false },
-            { id: 'bill_3', name: 'Netflix', amount: 649, categoryId: 'cat_entertainment', dueDate: today, isPaid: false, reminderEnabled: false },
-            { id: 'bill_4', name: 'Mobile Recharge', amount: 499, categoryId: 'cat_misc', dueDate: today, isPaid: false, reminderEnabled: false }
-          ];
-
-          await localforage.setItem('goals', defaultGoalsData);
-          await localforage.setItem('expenses', defaultExpensesData);
-          await localforage.setItem('bills', defaultBillsData);
-          await localforage.setItem('categories', defaultCategories);
-          await localforage.setItem('settings', { ...defaultSettings, currency: '₹' });
-          await localforage.setItem('demo_v2_loaded', true);
+          await localforage.setItem('goals', []);
+          await localforage.setItem('expenses', []);
+          await localforage.setItem('bills', []);
+          await localforage.setItem('splits', []);
+          
+          if (existingCategories && existingCategories.length > 0) {
+            await localforage.setItem('categories', existingCategories);
+          } else {
+            await localforage.setItem('categories', defaultCategories);
+          }
+          
+          // Clear any default budget limit
+          const newSettings = { ...defaultSettings, currency: '₹' };
+          await localforage.setItem('settings', newSettings);
+          
+          await localforage.setItem('appDataVersion', 2);
+          await localforage.setItem('isFirstLaunch', true);
         }
 
         const loadedExpenses = await localforage.getItem<Expense[]>('expenses') || [];
@@ -111,6 +104,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const loadedGoals = await localforage.getItem<Goal[]>('goals') || [];
         const loadedSplits = await localforage.getItem<Split[]>('splits') || [];
         const loadedSettings = await localforage.getItem<Settings>('settings') || defaultSettings;
+        const loadedIsFirstLaunch = await localforage.getItem<boolean>('isFirstLaunch');
 
         if (!loadedCategories || loadedCategories.length === 0) {
           loadedCategories = defaultCategories;
@@ -129,6 +123,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setGoals(loadedGoals);
         setSplits(loadedSplits);
         setSettings(loadedSettings);
+        if (loadedIsFirstLaunch !== null) {
+          setIsFirstLaunch(loadedIsFirstLaunch);
+        }
         
         // Apply dark mode immediately
         if (loadedSettings.darkMode) {
@@ -188,6 +185,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updatedAt: new Date().toISOString(),
     };
     setExpenses(prev => [newExpense, ...prev]);
+    
+    if (isFirstLaunch) {
+      setIsFirstLaunch(false);
+      localforage.setItem('isFirstLaunch', false);
+    }
   };
 
   const updateExpense = (id: string, updates: Partial<Expense>) => {
@@ -213,6 +215,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const deleteCategory = (id: string) => {
+    // Check if category is in use
+    const inUse = expenses.some(exp => exp.categoryId === id) || bills.some(bill => bill.categoryId === id);
+    if (inUse) {
+      alert("Cannot delete this category because it is currently used by an expense or bill.");
+      return;
+    }
     setCategories(prev => prev.filter(cat => cat.id !== id));
   };
 
@@ -261,7 +269,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setGoals([]);
     setSplits([]);
     setSettings(defaultSettings);
+    setIsFirstLaunch(true);
     await localforage.setItem('categories', defaultCategories);
+    await localforage.setItem('settings', defaultSettings);
+    await localforage.setItem('isFirstLaunch', true);
+    await localforage.setItem('appDataVersion', 2);
   };
 
   return (
@@ -270,7 +282,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addExpense, updateExpense, deleteExpense,
       addCategory, updateCategory, deleteCategory,
       addBill, updateBill, deleteBill, addGoal, updateGoal, deleteGoal,
-      updateSettings, resetData, isLoading
+      updateSettings, resetData, isLoading, isFirstLaunch
     }}>
       {children}
     </DataContext.Provider>

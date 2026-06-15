@@ -3,6 +3,7 @@ import { useData } from '../contexts/DataContext';
 import { formatCompactCurrency, formatCurrency } from '../utils/format';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 import styles from './Dashboard.module.css';
 
 const Dashboard: React.FC = () => {
@@ -59,6 +60,28 @@ const Dashboard: React.FC = () => {
     .slice(0, 5);
 
   const currentMonthName = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  if (expenses.length === 0) {
+    return (
+      <div className={styles.dashboard}>
+        <div className={styles.emptyWelcomeState}>
+          <div className={styles.welcomeIconWrapper}>
+            <Sparkles size={48} className={styles.welcomeIcon} />
+          </div>
+          <h2 className={styles.welcomeTitle}>Welcome to Expense Tracker</h2>
+          <p className={styles.welcomeMessage}>Track your expenses, manage bills, and reach your savings goals.</p>
+          
+          <button 
+            className={styles.primaryActionBtn}
+            onClick={() => window.dispatchEvent(new Event('openAddExpense'))}
+          >
+            Add Your First Expense
+          </button>
+          <p className={styles.secondaryText}>It takes less than 10 seconds to get started.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.dashboard}>
