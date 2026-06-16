@@ -86,17 +86,8 @@ const Dashboard: React.FC = () => {
   return (
     <div className={styles.dashboard}>
       <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>{currentMonthName}</h1>
-          <p className={styles.subtitle}>Welcome back! Here's your summary.</p>
-        </div>
-        <button 
-          className={styles.addBtn}
-          onClick={() => window.dispatchEvent(new Event('openAddExpense'))}
-        >
-          <Plus size={20} />
-          <span>Add Expense</span>
-        </button>
+        <h1 className={styles.title}>{currentMonthName}</h1>
+        <p className={styles.subtitle}>Welcome back! Here's your summary.</p>
       </header>
 
       {/* Monthly Snapshot */}

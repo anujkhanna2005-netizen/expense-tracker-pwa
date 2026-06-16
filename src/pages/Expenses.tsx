@@ -54,14 +54,6 @@ const Expenses: React.FC = () => {
           <h1 className={styles.title}>Expenses</h1>
           <p className={styles.subtitle}>{filteredExpenses.length} transactions • {formatCurrency(totalFilteredAmount, settings.currency)}</p>
         </div>
-        
-        <button 
-          className={styles.addBtn}
-          onClick={() => window.dispatchEvent(new Event('openAddExpense'))}
-        >
-          <Plus size={20} />
-          <span>Add Expense</span>
-        </button>
       </header>
 
       <div className={styles.controls}>
