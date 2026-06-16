@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../contexts/DataContext';
 import { formatCurrency } from '../utils/format';
-import { Search, Trash2, Edit2, ReceiptText } from 'lucide-react';
+import { Search, Trash2, Edit2, ReceiptText, Plus } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import EditExpenseModal from '../components/EditExpenseModal';
 import type { Expense } from '../types';
@@ -55,7 +55,13 @@ const Expenses: React.FC = () => {
           <p className={styles.subtitle}>{filteredExpenses.length} transactions • {formatCurrency(totalFilteredAmount, settings.currency)}</p>
         </div>
         
-        {/* We reuse the global Plus button from Layout for Quick Add, but we could add one here too if needed */}
+        <button 
+          className={styles.addBtn}
+          onClick={() => window.dispatchEvent(new Event('openAddExpense'))}
+        >
+          <Plus size={20} />
+          <span>Add Expense</span>
+        </button>
       </header>
 
       <div className={styles.controls}>

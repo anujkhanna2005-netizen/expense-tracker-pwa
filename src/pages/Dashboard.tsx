@@ -3,7 +3,7 @@ import { useData } from '../contexts/DataContext';
 import { formatCompactCurrency, formatCurrency } from '../utils/format';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Plus } from 'lucide-react';
 import styles from './Dashboard.module.css';
 
 const Dashboard: React.FC = () => {
@@ -86,8 +86,17 @@ const Dashboard: React.FC = () => {
   return (
     <div className={styles.dashboard}>
       <header className={styles.header}>
-        <h1 className={styles.title}>{currentMonthName}</h1>
-        <p className={styles.subtitle}>Welcome back! Here's your summary.</p>
+        <div>
+          <h1 className={styles.title}>{currentMonthName}</h1>
+          <p className={styles.subtitle}>Welcome back! Here's your summary.</p>
+        </div>
+        <button 
+          className={styles.addBtn}
+          onClick={() => window.dispatchEvent(new Event('openAddExpense'))}
+        >
+          <Plus size={20} />
+          <span>Add Expense</span>
+        </button>
       </header>
 
       {/* Monthly Snapshot */}
