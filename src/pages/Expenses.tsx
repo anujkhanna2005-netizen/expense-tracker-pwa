@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../contexts/DataContext';
 import { formatCurrency } from '../utils/format';
-import { Search, Trash2, Edit2, ReceiptText, Plus } from 'lucide-react';
+import { Search, Trash2, Edit2, ReceiptText } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import EditExpenseModal from '../components/EditExpenseModal';
 import type { Expense } from '../types';

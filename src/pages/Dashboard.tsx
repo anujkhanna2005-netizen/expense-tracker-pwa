@@ -3,7 +3,7 @@ import { useData } from '../contexts/DataContext';
 import { formatCompactCurrency, formatCurrency } from '../utils/format';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Plus } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import styles from './Dashboard.module.css';
 
 const Dashboard: React.FC = () => {
