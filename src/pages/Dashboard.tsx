@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { useData } from '../contexts/DataContext';
 import { formatCompactCurrency, formatCurrency } from '../utils/format';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useNavigate } from 'react-router-dom';
@@ -8,49 +7,26 @@ import Card from '../components/ui/Card';
 import Skeleton from '../components/ui/Skeleton';
 import Input from '../components/ui/Input';
 import EditExpenseModal from '../components/EditExpenseModal';
+import { useExpenses } from '../hooks/useExpenses';
+import { useCategories } from '../hooks/useCategories';
+import { useSettings } from '../hooks/useSettings';
+import { useHydration } from '../hooks/useHydration';
 import type { Expense } from '../types';
 import styles from './Dashboard.module.css';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6b7280'];
 
 const Dashboard: React.FC = () => {
-  const { expenses, categories, settings, isLoading } = useData();
+  const { expenses, totalSpent, categoryTotals, topCategory } = useExpenses();
+  const { categories } = useCategories();
+  const { settings } = useSettings();
+  const hydrated = useHydration();
+  const isLoading = !hydrated;
+
   const navigate = useNavigate();
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const currentMonth = new Date().toISOString().slice(0, 7); // 'YYYY-MM'
-  
-  // Calculate this month's expenses
-  const thisMonthExpenses = useMemo(() => {
-    return expenses.filter(exp => exp.date.startsWith(currentMonth));
-  }, [expenses, currentMonth]);
-
-  const totalSpent = useMemo(() => {
-    return thisMonthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-  }, [thisMonthExpenses]);
-
-  // Aggregate by category
-  const categoryTotals = useMemo(() => {
-    const totals: Record<string, number> = {};
-    thisMonthExpenses.forEach(exp => {
-      totals[exp.categoryId] = (totals[exp.categoryId] || 0) + exp.amount;
-    });
-    
-    return Object.entries(totals)
-      .map(([id, amount]) => {
-        const cat = categories.find(c => c.id === id);
-        return {
-          id,
-          name: cat?.name || 'Unknown',
-          amount,
-          icon: cat?.icon || '📦'
-        };
-      })
-      .sort((a, b) => b.amount - a.amount);
-  }, [thisMonthExpenses, categories]);
-
-  const topCategory = categoryTotals.length > 0 ? categoryTotals[0] : null;
   const budgetLimit = settings.monthlyBudgetLimit || 0;
   const budgetRemaining = budgetLimit > 0 ? budgetLimit - totalSpent : 0;
   const budgetPercent = budgetLimit > 0 ? Math.min((totalSpent / budgetLimit) * 100, 100) : 0;

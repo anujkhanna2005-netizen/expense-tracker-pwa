@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { useData } from '../contexts/DataContext';
 import { PAYMENT_METHODS } from '../types';
 import type { PaymentMethod } from '../types';
+import { useExpenses } from '../hooks/useExpenses';
+import { useCategories } from '../hooks/useCategories';
+import { useSettings } from '../hooks/useSettings';
+import { useToast } from '../components/ui/ToastProvider';
 import styles from './QuickAddExpense.module.css';
 
 interface QuickAddExpenseProps {
@@ -11,7 +14,10 @@ interface QuickAddExpenseProps {
 }
 
 const QuickAddExpense: React.FC<QuickAddExpenseProps> = ({ isOpen, onClose }) => {
-  const { categories, addExpense, settings } = useData();
+  const { addExpense } = useExpenses();
+  const { categories } = useCategories();
+  const { settings } = useSettings();
+  const { toast } = useToast();
   
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -21,13 +27,11 @@ const QuickAddExpense: React.FC<QuickAddExpenseProps> = ({ isOpen, onClose }) =>
 
   useEffect(() => {
     if (isOpen) {
-      // Reset state when opened, but remember last payment method from localStorage if possible
       const lastPayment = localStorage.getItem('lastPaymentMethod') as PaymentMethod;
       if (lastPayment) setPaymentMethod(lastPayment);
       
       setAmount('');
       setNotes('');
-      // Auto-select most used category in a real app, for now select first
       if (categories.length > 0 && !hasInitializedCategory.current) {
         setCategoryId(categories[0].id);
         hasInitializedCategory.current = true;
@@ -43,16 +47,19 @@ const QuickAddExpense: React.FC<QuickAddExpenseProps> = ({ isOpen, onClose }) =>
     e.preventDefault();
     if (!amount || isNaN(Number(amount)) || !categoryId) return;
 
-    addExpense({
+    const success = addExpense({
       amount: Number(amount),
       categoryId,
-      date: new Date().toISOString(), // Use full ISO string for sorting
+      date: new Date().toISOString(),
       paymentMethod,
       notes: notes.trim() ? notes : undefined
     });
 
-    localStorage.setItem('lastPaymentMethod', paymentMethod);
-    onClose();
+    if (success) {
+      localStorage.setItem('lastPaymentMethod', paymentMethod);
+      toast('Expense added successfully!', 'success');
+      onClose();
+    }
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {

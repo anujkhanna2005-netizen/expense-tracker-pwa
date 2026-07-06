@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './Modal.module.css';
 import { Target, X } from 'lucide-react';
-import { useData } from '../contexts/DataContext';
+import { useSettings } from '../hooks/useSettings';
 
 interface SetBudgetModalProps {
   isOpen: boolean;
@@ -9,7 +9,7 @@ interface SetBudgetModalProps {
 }
 
 const SetBudgetModal: React.FC<SetBudgetModalProps> = ({ isOpen, onClose }) => {
-  const { settings, updateSettings } = useData();
+  const { settings, updateSettings } = useSettings();
   const [amount, setAmount] = useState('');
 
   useEffect(() => {

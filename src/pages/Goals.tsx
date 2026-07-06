@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useData } from '../contexts/DataContext';
 import { formatCurrency, formatCompactCurrency } from '../utils/format';
 import { Plus, Target, Trophy, X, Trash2, Edit2 } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
@@ -8,11 +7,18 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Skeleton from '../components/ui/Skeleton';
 import ProgressBar from '../components/ui/ProgressBar';
+import { useGoals } from '../hooks/useGoals';
+import { useSettings } from '../hooks/useSettings';
+import { useHydration } from '../hooks/useHydration';
 import styles from './Goals.module.css';
 import type { Goal } from '../types';
 
 const Goals: React.FC = () => {
-  const { goals, settings, isLoading, addGoal, updateGoal, deleteGoal } = useData();
+  const { goals, totalSaved, totalTarget, addGoal, updateGoal, deleteGoal } = useGoals();
+  const { settings } = useSettings();
+  const hydrated = useHydration();
+  const isLoading = !hydrated;
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   
@@ -57,9 +63,6 @@ const Goals: React.FC = () => {
     setNewGoalName('');
     setNewGoalTarget('');
   };
-
-  const totalSaved = goals.reduce((sum, g) => sum + g.currentAmount, 0);
-  const totalTarget = goals.reduce((sum, g) => sum + g.targetAmount, 0);
 
   if (isLoading) {
     return (

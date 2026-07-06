@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styles from './Modal.module.css';
 import { Target, X } from 'lucide-react';
-import { useData } from '../contexts/DataContext';
+import { useSettings } from '../hooks/useSettings';
 import { formatCurrency } from '../utils/format';
 
 import type { Goal } from '../types';
@@ -19,7 +19,7 @@ const AddFundsModal: React.FC<AddFundsModalProps> = ({
   onConfirm, 
   onCancel 
 }) => {
-  const { settings } = useData();
+  const { settings } = useSettings();
   const [amount, setAmount] = useState('');
 
   if (!isOpen || !goal) return null;

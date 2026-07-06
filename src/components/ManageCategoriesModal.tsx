@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { useData } from '../contexts/DataContext';
+import { useCategories } from '../hooks/useCategories';
+import { useExpenses } from '../hooks/useExpenses';
+import { useBills } from '../hooks/useBills';
+import { useToast } from './ui/ToastProvider';
 import ConfirmModal from './ConfirmModal';
 import styles from './ManageCategoriesModal.module.css';
 
@@ -10,7 +13,11 @@ interface ManageCategoriesModalProps {
 }
 
 const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({ isOpen, onClose }) => {
-  const { categories, addCategory, deleteCategory, expenses } = useData();
+  const { categories, addCategory, deleteCategory } = useCategories();
+  const { expenses } = useExpenses();
+  const { bills } = useBills();
+  const { toast } = useToast();
+
   const [newCatName, setNewCatName] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('📦');
   const [deleteCatId, setDeleteCatId] = useState<string | null>(null);
@@ -21,21 +28,22 @@ const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({ isOpen, o
     e.preventDefault();
     if (!newCatName.trim()) return;
     
-    addCategory({
+    const success = addCategory({
       name: newCatName.trim(),
       icon: newCatIcon,
       isDefault: false
     });
-    setNewCatName('');
-    setNewCatIcon('📦');
+    if (success) {
+      setNewCatName('');
+      setNewCatIcon('📦');
+    }
   };
 
   const handleDelete = (id: string) => {
-    // Check if category is used
-    const isUsed = expenses.some(exp => exp.categoryId === id);
-    if (isUsed) {
-      // TODO: replace with toast in Phase 2
-      alert('Cannot delete this category because it is used by existing expenses.');
+    const isUsedInExpenses = expenses.some(exp => exp.categoryId === id);
+    const isUsedInBills = bills.some(bill => bill.categoryId === id);
+    if (isUsedInExpenses || isUsedInBills) {
+      toast('Cannot delete this category because it is used by existing expenses or bills.', 'error');
       return;
     }
     
@@ -106,7 +114,7 @@ const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({ isOpen, o
         confirmText="Delete"
         onConfirm={() => {
           if (deleteCatId) {
-            deleteCategory(deleteCatId);
+            deleteCategory(deleteCatId, false, false);
             setDeleteCatId(null);
           }
         }}

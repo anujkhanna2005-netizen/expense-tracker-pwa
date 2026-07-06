@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import modalStyles from './Modal.module.css';
 import styles from './EditExpenseModal.module.css';
 import { X, Edit2 } from 'lucide-react';
-import { useData } from '../contexts/DataContext';
+import { useExpenses } from '../hooks/useExpenses';
+import { useCategories } from '../hooks/useCategories';
 import { PAYMENT_METHODS } from '../types';
 import type { Expense, PaymentMethod } from '../types';
 
@@ -13,7 +14,8 @@ interface EditExpenseModalProps {
 }
 
 const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, expense, onClose }) => {
-  const { categories, updateExpense } = useData();
+  const { updateExpense } = useExpenses();
+  const { categories } = useCategories();
   
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -27,7 +29,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, expense, on
       setCategoryId(expense.categoryId);
       setPaymentMethod(expense.paymentMethod);
       setNotes(expense.notes || '');
-      // Format date for date input (YYYY-MM-DD)
       setDate(expense.date.split('T')[0]);
     }
   }, [isOpen, expense]);
@@ -43,7 +44,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, expense, on
         categoryId,
         paymentMethod,
         notes: notes.trim() ? notes : undefined,
-        date: new Date(date).toISOString(), // Preserve time if we want, or just set to midnight. The original date was probably an ISO string. We replace the date part.
+        date: new Date(date).toISOString(),
         updatedAt: new Date().toISOString()
       });
       onClose();

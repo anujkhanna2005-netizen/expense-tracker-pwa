@@ -1,5 +1,4 @@
-import React, { useRef } from 'react';
-import { useData } from '../contexts/DataContext';
+import React, { useRef, useState } from 'react';
 import { Moon, Sun, Download, Upload, RotateCcw, Tags, FileJson, FileText } from 'lucide-react';
 import ManageCategoriesModal from '../components/ManageCategoriesModal';
 import SetBudgetModal from '../components/SetBudgetModal';
@@ -8,8 +7,19 @@ import Select from '../components/ui/Select';
 import Toggle from '../components/ui/Toggle';
 import Button from '../components/ui/Button';
 import { useToast } from '../components/ui/ToastProvider';
+import { useExpenses } from '../hooks/useExpenses';
+import { useCategories } from '../hooks/useCategories';
+import { useBills } from '../hooks/useBills';
+import { useGoals } from '../hooks/useGoals';
+import { useSettings } from '../hooks/useSettings';
+import { useExpenseStore } from '../stores/expenseStore';
+import { useCategoryStore } from '../stores/categoryStore';
+import { useBillStore } from '../stores/billStore';
+import { useGoalStore } from '../stores/goalStore';
+import { useSettingsStore } from '../stores/settingsStore';
+import { importDataSchema } from '../utils/validation';
+import { storageService } from '../services/storageService';
 import styles from './Settings.module.css';
-import { useState } from 'react';
 
 const CURRENCY_OPTIONS = [
   { value: 'USD', label: 'USD - US Dollar ($)' },
@@ -22,8 +32,13 @@ const CURRENCY_OPTIONS = [
 ];
 
 const Settings: React.FC = () => {
-  const { settings, updateSettings, resetData, importData, expenses, categories, bills, goals } = useData();
+  const { expenses } = useExpenses();
+  const { categories } = useCategories();
+  const { bills } = useBills();
+  const { goals } = useGoals();
+  const { settings, updateSettings } = useSettings();
   const { toast } = useToast();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isManageCatsOpen, setIsManageCatsOpen] = useState(false);
   const [isSetBudgetOpen, setIsSetBudgetOpen] = useState(false);
@@ -94,6 +109,7 @@ const Settings: React.FC = () => {
         const content = e.target?.result as string;
         const data = JSON.parse(content);
         
+        // Quick basic structure check before prompting confirm modal
         if (data.expenses && data.categories) {
           setImportDataPending(data);
           setShowImportConfirm(true);
@@ -115,13 +131,20 @@ const Settings: React.FC = () => {
 
   const handleConfirmImport = async () => {
     if (importDataPending) {
-      await importData({
-        expenses: importDataPending.expenses,
-        categories: importDataPending.categories,
-        bills: importDataPending.bills || [],
-        goals: importDataPending.goals || [],
-        settings: importDataPending.settings || settings,
-      });
+      const validation = importDataSchema.safeParse(importDataPending);
+      if (!validation.success) {
+        const errMsg = validation.error.issues[0]?.message || 'Invalid backup format';
+        toast(errMsg, 'error');
+        return;
+      }
+
+      const data = validation.data;
+      if (data.expenses) useExpenseStore.getState().setExpenses(data.expenses);
+      if (data.categories) useCategoryStore.getState().setCategories(data.categories);
+      if (data.bills) useBillStore.getState().setBills(data.bills);
+      if (data.goals) useGoalStore.getState().setGoals(data.goals);
+      if (data.settings) useSettingsStore.getState().updateSettings(data.settings);
+
       setShowImportConfirm(false);
       setImportDataPending(null);
       toast('Data imported successfully!', 'success');
@@ -137,9 +160,16 @@ const Settings: React.FC = () => {
     setShowResetConfirm2(true);
   };
 
-  const handleResetConfirm2 = () => {
+  const handleResetConfirm2 = async () => {
     setShowResetConfirm2(false);
-    resetData();
+    await storageService.clear();
+
+    useExpenseStore.getState().resetExpenses();
+    useCategoryStore.getState().resetCategories();
+    useBillStore.getState().resetBills();
+    useGoalStore.getState().resetGoals();
+    useSettingsStore.getState().resetSettings();
+
     toast('All data has been reset.', 'info');
   };
 

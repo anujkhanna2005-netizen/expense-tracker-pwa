@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { useData } from '../contexts/DataContext';
 import { formatCurrency, formatCompactCurrency } from '../utils/format';
 import { CheckCircle2, Circle, Calendar, Plus, X, Trash2, Edit2 } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
@@ -7,10 +6,19 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Skeleton from '../components/ui/Skeleton';
 import Select from '../components/ui/Select';
+import { useBills } from '../hooks/useBills';
+import { useCategories } from '../hooks/useCategories';
+import { useSettings } from '../hooks/useSettings';
+import { useHydration } from '../hooks/useHydration';
 import styles from './Bills.module.css';
 
 const Bills: React.FC = () => {
-  const { bills, settings, categories, isLoading, addBill, updateBill, deleteBill } = useData();
+  const { bills, totalBillsAmount, unpaidCount, addBill, updateBill, deleteBill } = useBills();
+  const { categories } = useCategories();
+  const { settings } = useSettings();
+  const hydrated = useHydration();
+  const isLoading = !hydrated;
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingBillId, setEditingBillId] = useState<string | null>(null);
   const [deleteBillId, setDeleteBillId] = useState<string | null>(null);
@@ -77,14 +85,6 @@ const Bills: React.FC = () => {
     categories.forEach(cat => options.push({ value: cat.id, label: cat.name }));
     return options;
   }, [categories]);
-
-  // Calculate stats for current month using local timezone
-  const now = new Date();
-  const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const currentMonthBills = bills.filter(b => b.dueDate.startsWith(currentMonthPrefix));
-  
-  const totalBillsAmount = currentMonthBills.reduce((sum, b) => sum + b.amount, 0);
-  const unpaidCount = currentMonthBills.filter(b => !b.isPaid).length;
 
   if (isLoading) {
     return (

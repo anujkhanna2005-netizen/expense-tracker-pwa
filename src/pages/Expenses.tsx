@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { useData } from '../contexts/DataContext';
 import { formatCurrency } from '../utils/format';
 import { Trash2, Edit2, ReceiptText } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
@@ -8,12 +7,18 @@ import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { useToast } from '../components/ui/ToastProvider';
+import { useExpenses } from '../hooks/useExpenses';
+import { useCategories } from '../hooks/useCategories';
+import { useSettings } from '../hooks/useSettings';
 import type { Expense } from '../types';
 import styles from './Expenses.module.css';
 
 const Expenses: React.FC = () => {
-  const { expenses, categories, settings, deleteExpense, addExpense } = useData();
+  const { expenses, deleteExpense, addExpense } = useExpenses();
+  const { categories } = useCategories();
+  const { settings } = useSettings();
   const { toast } = useToast();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -91,7 +96,7 @@ const Expenses: React.FC = () => {
     deleteExpense(deleteExpenseId);
     setDeleteExpenseId(null);
 
-    // Set up undo window — store the deleted expense in ref, re-insert if user clicks Undo within 5s
+    // Set up undo window
     const timer = setTimeout(() => {
       pendingDeleteRef.current = null;
     }, 5000);
@@ -106,7 +111,6 @@ const Expenses: React.FC = () => {
         onClick: () => {
           if (pendingDeleteRef.current) {
             clearTimeout(pendingDeleteRef.current.timer);
-            // Re-insert the expense (addExpense creates a new id, so we use setExpenses indirectly via re-add)
             const { expense } = pendingDeleteRef.current;
             addExpense({
               amount: expense.amount,
