@@ -1,14 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import localforage from 'localforage';
-import type { Expense, Category, Bill, Goal, Split, Settings } from '../types';
+import type { Expense, Category, Bill, Goal, Settings } from '../types';
 
 interface DataContextType {
   expenses: Expense[];
   categories: Category[];
   bills: Bill[];
   goals: Goal[];
-  splits: Split[];
   settings: Settings;
   
   // Actions
@@ -29,6 +28,13 @@ interface DataContextType {
 
   updateSettings: (settings: Partial<Settings>) => void;
   resetData: () => void;
+  importData: (data: {
+    expenses?: Expense[];
+    categories?: Category[];
+    bills?: Bill[];
+    goals?: Goal[];
+    settings?: Settings;
+  }) => Promise<void>;
   
   isLoading: boolean;
   isFirstLaunch: boolean;
@@ -63,7 +69,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [categories, setCategories] = useState<Category[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [splits, setSplits] = useState<Split[]>([]);
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
   const [isFirstLaunch, setIsFirstLaunch] = useState(true);
@@ -102,7 +107,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         let loadedCategories = await localforage.getItem<Category[]>('categories');
         const loadedBills = await localforage.getItem<Bill[]>('bills') || [];
         const loadedGoals = await localforage.getItem<Goal[]>('goals') || [];
-        const loadedSplits = await localforage.getItem<Split[]>('splits') || [];
         const loadedSettings = await localforage.getItem<Settings>('settings') || defaultSettings;
         const loadedIsFirstLaunch = await localforage.getItem<boolean>('isFirstLaunch');
 
@@ -121,7 +125,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setCategories(loadedCategories);
         setBills(loadedBills);
         setGoals(loadedGoals);
-        setSplits(loadedSplits);
         setSettings(loadedSettings);
         if (loadedIsFirstLaunch !== null) {
           setIsFirstLaunch(loadedIsFirstLaunch);
@@ -261,13 +264,48 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setSettings(prev => ({ ...prev, ...updates }));
   };
 
+  const importData = async (data: {
+    expenses?: Expense[];
+    categories?: Category[];
+    bills?: Bill[];
+    goals?: Goal[];
+    settings?: Settings;
+  }) => {
+    if (data.expenses) {
+      setExpenses(data.expenses);
+      await localforage.setItem('expenses', data.expenses);
+    }
+    if (data.categories) {
+      setCategories(data.categories);
+      await localforage.setItem('categories', data.categories);
+    }
+    if (data.bills) {
+      setBills(data.bills);
+      await localforage.setItem('bills', data.bills);
+    }
+    if (data.goals) {
+      setGoals(data.goals);
+      await localforage.setItem('goals', data.goals);
+    }
+    if (data.settings) {
+      setSettings(data.settings);
+      await localforage.setItem('settings', data.settings);
+      
+      // Apply dark mode immediately
+      if (data.settings.darkMode) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+    }
+  };
+
   const resetData = async () => {
     await localforage.clear();
     setExpenses([]);
     setCategories(defaultCategories);
     setBills([]);
     setGoals([]);
-    setSplits([]);
     setSettings(defaultSettings);
     setIsFirstLaunch(true);
     await localforage.setItem('categories', defaultCategories);
@@ -278,11 +316,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return (
     <DataContext.Provider value={{
-      expenses, categories, bills, goals, splits, settings,
+      expenses, categories, bills, goals, settings,
       addExpense, updateExpense, deleteExpense,
       addCategory, updateCategory, deleteCategory,
       addBill, updateBill, deleteBill, addGoal, updateGoal, deleteGoal,
-      updateSettings, resetData, isLoading, isFirstLaunch
+      updateSettings, resetData, importData, isLoading, isFirstLaunch
     }}>
       {children}
     </DataContext.Provider>

@@ -1,9 +1,9 @@
-export type PaymentMethod = 'Cash' | 'Credit Card' | 'Debit Card' | 'UPI' | 'Bank Transfer';
+export const PAYMENT_METHODS = ['Cash', 'Credit Card', 'Debit Card', 'UPI', 'Bank Transfer'] as const;
+export type PaymentMethod = typeof PAYMENT_METHODS[number];
 
 export interface Category {
   id: string;
   name: string;
-  color?: string; // Hex color
   icon?: string;
   isDefault?: boolean;
 }
@@ -19,12 +19,6 @@ export interface Expense {
   updatedAt: string;
 }
 
-export interface Budget {
-  monthYear: string; // 'YYYY-MM'
-  totalLimit: number;
-  categoryLimits: Record<string, number>; // categoryId -> limit
-}
-
 export interface Bill {
   id: string;
   name: string;
@@ -33,23 +27,6 @@ export interface Bill {
   isPaid: boolean;
   reminderEnabled: boolean;
   categoryId: string;
-}
-
-export interface SplitParticipant {
-  id: string;
-  name: string;
-  amountOwed: number;
-  isSettled: boolean;
-}
-
-export interface Split {
-  id: string;
-  expenseId?: string; // Optional link to an expense
-  description: string;
-  totalAmount: number;
-  paidBy: string; // Participant ID
-  participants: SplitParticipant[];
-  date: string;
 }
 
 export interface Goal {

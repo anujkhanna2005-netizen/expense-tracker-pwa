@@ -4,9 +4,11 @@ import { Target, X } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { formatCurrency } from '../utils/format';
 
+import type { Goal } from '../types';
+
 interface AddFundsModalProps {
   isOpen: boolean;
-  goal: any;
+  goal: Goal | null;
   onConfirm: (amount: number) => void;
   onCancel: () => void;
 }

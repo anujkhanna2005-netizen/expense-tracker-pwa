@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
+import ConfirmModal from './ConfirmModal';
 import styles from './ManageCategoriesModal.module.css';
 
 interface ManageCategoriesModalProps {
@@ -12,6 +13,7 @@ const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({ isOpen, o
   const { categories, addCategory, deleteCategory, expenses } = useData();
   const [newCatName, setNewCatName] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('📦');
+  const [deleteCatId, setDeleteCatId] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -32,13 +34,12 @@ const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({ isOpen, o
     // Check if category is used
     const isUsed = expenses.some(exp => exp.categoryId === id);
     if (isUsed) {
+      // TODO: replace with toast in Phase 2
       alert('Cannot delete this category because it is used by existing expenses.');
       return;
     }
     
-    if (window.confirm('Delete this category?')) {
-      deleteCategory(id);
-    }
+    setDeleteCatId(id);
   };
 
   return (
@@ -97,6 +98,20 @@ const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({ isOpen, o
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!deleteCatId}
+        title="Delete Category"
+        message="Are you sure you want to delete this category?"
+        confirmText="Delete"
+        onConfirm={() => {
+          if (deleteCatId) {
+            deleteCategory(deleteCatId);
+            setDeleteCatId(null);
+          }
+        }}
+        onCancel={() => setDeleteCatId(null)}
+      />
     </div>
   );
 };

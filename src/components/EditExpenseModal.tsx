@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import styles from './Modal.module.css';
+import modalStyles from './Modal.module.css';
+import styles from './EditExpenseModal.module.css';
 import { X, Edit2 } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
+import { PAYMENT_METHODS } from '../types';
 import type { Expense, PaymentMethod } from '../types';
 
 interface EditExpenseModalProps {
@@ -49,24 +51,24 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, expense, on
   };
 
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalContent}>
-        <div className={styles.modalHeader}>
-          <div className={styles.modalTitleGroup}>
-            <Edit2 size={24} className={styles.targetIcon} />
-            <h3 className={styles.modalTitle}>Edit Expense</h3>
+    <div className={modalStyles.modalOverlay}>
+      <div className={modalStyles.modalContent}>
+        <div className={modalStyles.modalHeader}>
+          <div className={modalStyles.modalTitleGroup}>
+            <Edit2 size={24} className={modalStyles.targetIcon} />
+            <h3 className={modalStyles.modalTitle}>Edit Expense</h3>
           </div>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">
+          <button className={modalStyles.closeBtn} onClick={onClose} aria-label="Close">
             <X size={20} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className={styles.modalBody}>
+        <form onSubmit={handleSubmit} className={modalStyles.modalBody}>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Amount</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Amount</label>
             <input
               type="number"
-              className={styles.modalInput}
+              className={modalStyles.modalInput}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Amount"
@@ -76,10 +78,10 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, expense, on
             />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Category</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Category</label>
             <select
-              className={styles.modalInput}
+              className={modalStyles.modalInput}
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               required
@@ -91,37 +93,36 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, expense, on
             </select>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Date</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Date</label>
             <input
               type="date"
-              className={styles.modalInput}
+              className={modalStyles.modalInput}
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
             />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Payment Method</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Payment Method</label>
             <select
-              className={styles.modalInput}
+              className={modalStyles.modalInput}
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
               required
             >
-              <option value="Cash">Cash</option>
-              <option value="Card">Card</option>
-              <option value="UPI">UPI</option>
-              <option value="Bank Transfer">Bank Transfer</option>
+              {PAYMENT_METHODS.map(method => (
+                <option key={method} value={method}>{method}</option>
+              ))}
             </select>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Notes (Optional)</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Notes (Optional)</label>
             <input
               type="text"
-              className={styles.modalInput}
+              className={modalStyles.modalInput}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="E.g. Lunch with friends"
@@ -129,9 +130,9 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ isOpen, expense, on
           </div>
           
         </form>
-        <div className={styles.modalFooter}>
-          <button type="button" className={styles.cancelBtn} onClick={onClose}>Cancel</button>
-          <button type="button" className={styles.primaryBtn} onClick={handleSubmit}>
+        <div className={modalStyles.modalFooter}>
+          <button type="button" className={modalStyles.cancelBtn} onClick={onClose}>Cancel</button>
+          <button type="button" className={modalStyles.primaryBtn} onClick={handleSubmit}>
             Save Changes
           </button>
         </div>

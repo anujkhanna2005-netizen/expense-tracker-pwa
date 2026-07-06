@@ -1,0 +1,37 @@
+.toggle {
+  position: relative;
+  display: inline-flex;
+  width: 44px;
+  height: 24px;
+  background-color: var(--surface-3);
+  border-radius: var(--radius-full);
+  padding: 2px;
+  cursor: pointer;
+  outline: none;
+  border: 1px solid var(--border-default);
+  transition: background-color var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.toggle:focus {
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary-hover);
+}
+
+.knob {
+  width: 18px;
+  height: 18px;
+  background-color: #ffffff;
+  border-radius: var(--radius-full);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform var(--duration-fast) var(--ease-spring);
+}
+
+.active .knob {
+  transform: translateX(20px);
+}

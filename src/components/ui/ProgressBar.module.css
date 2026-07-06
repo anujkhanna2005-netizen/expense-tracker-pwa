@@ -1,0 +1,35 @@
+.progressContainer {
+  width: 100%;
+  background-color: var(--surface-2);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width var(--duration-normal) var(--ease-out),
+              background-color var(--duration-normal) var(--ease-out);
+}
+
+/* Sizes */
+.sm {
+  height: 6px;
+}
+
+.lg {
+  height: 12px;
+}
+
+/* Color States */
+.primary {
+  background-color: var(--color-primary);
+}
+
+.warning {
+  background-color: var(--color-warning);
+}
+
+.danger {
+  background-color: var(--color-danger);
+}

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
+import { PAYMENT_METHODS } from '../types';
 import type { PaymentMethod } from '../types';
 import styles from './QuickAddExpense.module.css';
 
@@ -16,6 +17,7 @@ const QuickAddExpense: React.FC<QuickAddExpenseProps> = ({ isOpen, onClose }) =>
   const [categoryId, setCategoryId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
   const [notes, setNotes] = useState('');
+  const hasInitializedCategory = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -26,11 +28,14 @@ const QuickAddExpense: React.FC<QuickAddExpenseProps> = ({ isOpen, onClose }) =>
       setAmount('');
       setNotes('');
       // Auto-select most used category in a real app, for now select first
-      if (categories.length > 0 && !categoryId) {
+      if (categories.length > 0 && !hasInitializedCategory.current) {
         setCategoryId(categories[0].id);
+        hasInitializedCategory.current = true;
       }
+    } else {
+      hasInitializedCategory.current = false;
     }
-  }, [isOpen, categories, categoryId]);
+  }, [isOpen, categories]);
 
   if (!isOpen) return null;
 
@@ -104,11 +109,9 @@ const QuickAddExpense: React.FC<QuickAddExpenseProps> = ({ isOpen, onClose }) =>
               onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
               className={styles.select}
             >
-              <option value="Cash">Cash</option>
-              <option value="Credit Card">Credit Card</option>
-              <option value="Debit Card">Debit Card</option>
-              <option value="UPI">UPI</option>
-              <option value="Bank Transfer">Bank Transfer</option>
+              {PAYMENT_METHODS.map(method => (
+                <option key={method} value={method}>{method}</option>
+              ))}
             </select>
           </div>
 

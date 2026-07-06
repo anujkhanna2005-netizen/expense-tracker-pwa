@@ -1,26 +1,58 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useData } from '../contexts/DataContext';
 import { formatCurrency } from '../utils/format';
-import { Search, Trash2, Edit2, ReceiptText } from 'lucide-react';
+import { Trash2, Edit2, ReceiptText } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import EditExpenseModal from '../components/EditExpenseModal';
+import Select from '../components/ui/Select';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import { useToast } from '../components/ui/ToastProvider';
 import type { Expense } from '../types';
 import styles from './Expenses.module.css';
 
 const Expenses: React.FC = () => {
-  const { expenses, categories, settings, deleteExpense } = useData();
+  const { expenses, categories, settings, deleteExpense, addExpense } = useData();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const pendingDeleteRef = useRef<{ expense: Expense; timer: ReturnType<typeof setTimeout> } | null>(null);
+
+  const hasActiveFilters = selectedMonth !== 'all' || selectedCategory !== 'all' || sortOrder !== 'newest';
+
+  const clearFilters = () => {
+    setSelectedMonth('all');
+    setSelectedCategory('all');
+    setSortOrder('newest');
+  };
 
   // Derive unique months from expenses
-  const availableMonths = useMemo(() => {
+  const monthOptions = useMemo(() => {
     const months = new Set(expenses.map(e => e.date.slice(0, 7)));
-    return Array.from(months).sort((a, b) => b.localeCompare(a));
+    const sorted = Array.from(months).sort((a, b) => b.localeCompare(a));
+    const options = [{ value: 'all', label: 'All Months' }];
+    sorted.forEach(month => {
+      const [year, m] = month.split('-');
+      const date = new Date(parseInt(year), parseInt(m) - 1);
+      options.push({ value: month, label: date.toLocaleString('default', { month: 'short', year: 'numeric' }) });
+    });
+    return options;
   }, [expenses]);
+
+  const categoryOptions = useMemo(() => {
+    const options = [{ value: 'all', label: 'All Categories' }];
+    categories.forEach(cat => options.push({ value: cat.id, label: cat.name }));
+    return options;
+  }, [categories]);
+
+  const sortOptions = [
+    { value: 'newest', label: 'Newest First' },
+    { value: 'oldest', label: 'Oldest First' },
+  ];
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter(exp => {
@@ -47,6 +79,49 @@ const Expenses: React.FC = () => {
 
   const totalFilteredAmount = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
 
+  const handleDeleteConfirm = () => {
+    if (!deleteExpenseId) return;
+    const expenseToDelete = expenses.find(e => e.id === deleteExpenseId);
+    if (!expenseToDelete) {
+      setDeleteExpenseId(null);
+      return;
+    }
+
+    // Immediately delete from UI/state
+    deleteExpense(deleteExpenseId);
+    setDeleteExpenseId(null);
+
+    // Set up undo window — store the deleted expense in ref, re-insert if user clicks Undo within 5s
+    const timer = setTimeout(() => {
+      pendingDeleteRef.current = null;
+    }, 5000);
+
+    pendingDeleteRef.current = { expense: expenseToDelete, timer };
+
+    toast(
+      `Expense deleted`,
+      'info',
+      {
+        label: 'Undo',
+        onClick: () => {
+          if (pendingDeleteRef.current) {
+            clearTimeout(pendingDeleteRef.current.timer);
+            // Re-insert the expense (addExpense creates a new id, so we use setExpenses indirectly via re-add)
+            const { expense } = pendingDeleteRef.current;
+            addExpense({
+              amount: expense.amount,
+              categoryId: expense.categoryId,
+              date: expense.date,
+              notes: expense.notes,
+              paymentMethod: expense.paymentMethod,
+            });
+            pendingDeleteRef.current = null;
+          }
+        },
+      }
+    );
+  };
+
   return (
     <div className={styles.expensesContainer}>
       <header className={styles.header}>
@@ -58,49 +133,37 @@ const Expenses: React.FC = () => {
 
       <div className={styles.controls}>
         <div className={styles.searchBox}>
-          <Search size={18} className={styles.searchIcon} />
-          <input 
-            type="text" 
-            placeholder="Search notes or category..." 
+          <Input
+            placeholder="Search notes or category..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={styles.searchInput}
+            onChange={setSearchQuery}
           />
         </div>
         
         <div className={styles.filters}>
-          <select 
-            value={selectedMonth} 
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className={styles.select}
-          >
-            <option value="all">All Months</option>
-            {availableMonths.map(month => {
-              const [year, m] = month.split('-');
-              const date = new Date(parseInt(year), parseInt(m) - 1);
-              return <option key={month} value={month}>{date.toLocaleString('default', { month: 'short', year: 'numeric' })}</option>;
-            })}
-          </select>
+          <Select
+            value={selectedMonth}
+            options={monthOptions}
+            onChange={setSelectedMonth}
+          />
 
-          <select 
-            value={selectedCategory} 
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className={styles.select}
-          >
-            <option value="all">All Categories</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
+          <Select
+            value={selectedCategory}
+            options={categoryOptions}
+            onChange={setSelectedCategory}
+          />
 
-          <select 
-            value={sortOrder} 
-            onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
-            className={styles.select}
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-          </select>
+          <Select
+            value={sortOrder}
+            options={sortOptions}
+            onChange={(v) => setSortOrder(v as 'newest' | 'oldest')}
+          />
+
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          )}
         </div>
       </div>
 
@@ -110,7 +173,7 @@ const Expenses: React.FC = () => {
             const category = categories.find(c => c.id === exp.categoryId);
             return (
               <div key={exp.id} className={styles.expenseCard}>
-                <div className={styles.expenseIcon}>
+                <div className={styles.expenseIcon} aria-hidden="true">
                   {category?.icon || '📦'}
                 </div>
                 
@@ -131,14 +194,14 @@ const Expenses: React.FC = () => {
                   <div className={styles.actionButtons}>
                     <button 
                       className={styles.actionBtn} 
-                      aria-label="Edit"
+                      aria-label="Edit expense"
                       onClick={() => setEditExpense(exp)}
                     >
                       <Edit2 size={16} />
                     </button>
                     <button 
                       className={`${styles.actionBtn} ${styles.deleteBtn}`} 
-                      aria-label="Delete"
+                      aria-label="Delete expense"
                       onClick={() => setDeleteExpenseId(exp.id)}
                     >
                       <Trash2 size={16} />
@@ -150,10 +213,10 @@ const Expenses: React.FC = () => {
           })
         ) : (
           <div className={styles.emptyState}>
-            <ReceiptText size={48} className={styles.emptyIcon} style={{ margin: '0 auto 16px', color: 'var(--text-muted)' }} />
+            <ReceiptText size={48} className={styles.emptyIcon} />
             <h3>No expenses recorded yet</h3>
             <p>Start tracking your spending by adding your first expense.</p>
-            <button className={styles.emptyStateBtn} onClick={() => window.dispatchEvent(new Event('openAddExpense'))} style={{ marginTop: '16px', backgroundColor: 'var(--accent-primary)', color: 'white', border: 'none', padding: '10px 20px', borderRadius: 'var(--radius-md)', fontWeight: 500, cursor: 'pointer' }}>
+            <button className={styles.emptyStateBtn} onClick={() => window.dispatchEvent(new Event('openAddExpense'))}>
               Add Expense
             </button>
           </div>
@@ -165,9 +228,7 @@ const Expenses: React.FC = () => {
         title="Delete Expense"
         message="Are you sure you want to delete this expense?"
         confirmText="Delete Expense"
-        onConfirm={() => {
-          if (deleteExpenseId) deleteExpense(deleteExpenseId);
-        }}
+        onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteExpenseId(null)}
       />
 

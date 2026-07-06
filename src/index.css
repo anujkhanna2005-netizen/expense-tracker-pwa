@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import './styles/tokens.css';
 
 :root {
   /* Light Mode Colors - Neutral Palette */
@@ -8,7 +9,7 @@
   
   --text-primary: #111827;
   --text-secondary: #4b5563;
-  --text-muted: #9ca3af;
+  --text-muted: #6b7280;
   
   --border-color: #e5e7eb;
   
@@ -41,7 +42,7 @@
   
   --text-primary: #f9fafb;
   --text-secondary: #d1d5db;
-  --text-muted: #6b7280;
+  --text-muted: #9ca3af;
   
   --border-color: rgba(255,255,255,0.08);
   

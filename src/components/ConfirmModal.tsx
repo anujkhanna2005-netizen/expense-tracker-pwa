@@ -9,6 +9,7 @@ interface ConfirmModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   confirmText?: string;
+  onClose?: () => void;
 }
 
 const ConfirmModal: React.FC<ConfirmModalProps> = ({ 
@@ -17,19 +18,22 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   message, 
   onConfirm, 
   onCancel,
-  confirmText = "Delete"
+  confirmText = "Delete",
+  onClose
 }) => {
   if (!isOpen) return null;
 
+  const handleClose = onClose || onCancel;
+
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalContent}>
+    <div className={styles.modalOverlay} onClick={handleClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div className={styles.modalTitleGroup}>
             <AlertTriangle size={24} className={styles.dangerIcon} />
             <h3 className={styles.modalTitle}>{title}</h3>
           </div>
-          <button className={styles.closeBtn} onClick={onCancel}>
+          <button className={styles.closeBtn} onClick={handleClose}>
             <X size={20} />
           </button>
         </div>
@@ -39,7 +43,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         </div>
         <div className={styles.modalFooter}>
           <button className={styles.cancelBtn} onClick={onCancel}>Cancel</button>
-          <button className={styles.dangerBtn} onClick={() => { onConfirm(); onCancel(); }}>
+          <button className={styles.dangerBtn} onClick={onConfirm}>
             {confirmText}
           </button>
         </div>

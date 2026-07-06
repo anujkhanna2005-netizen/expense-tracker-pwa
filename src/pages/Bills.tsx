@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useData } from '../contexts/DataContext';
 import { formatCurrency, formatCompactCurrency } from '../utils/format';
 import { CheckCircle2, Circle, Calendar, Plus, X, Trash2, Edit2 } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Skeleton from '../components/ui/Skeleton';
+import Select from '../components/ui/Select';
 import styles from './Bills.module.css';
 
 const Bills: React.FC = () => {
-  const { bills, settings, categories, addBill, updateBill, deleteBill } = useData();
+  const { bills, settings, categories, isLoading, addBill, updateBill, deleteBill } = useData();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingBillId, setEditingBillId] = useState<string | null>(null);
   const [deleteBillId, setDeleteBillId] = useState<string | null>(null);
@@ -68,6 +72,12 @@ const Bills: React.FC = () => {
     setNewBillCat('');
   };
 
+  const categoryOptions = useMemo(() => {
+    const options = [{ value: '', label: 'Select Category' }];
+    categories.forEach(cat => options.push({ value: cat.id, label: cat.name }));
+    return options;
+  }, [categories]);
+
   // Calculate stats for current month using local timezone
   const now = new Date();
   const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -75,6 +85,25 @@ const Bills: React.FC = () => {
   
   const totalBillsAmount = currentMonthBills.reduce((sum, b) => sum + b.amount, 0);
   const unpaidCount = currentMonthBills.filter(b => !b.isPaid).length;
+
+  if (isLoading) {
+    return (
+      <div className={styles.billsContainer}>
+        <header className={styles.header}>
+          <Skeleton variant="line" width={160} height={32} />
+        </header>
+        <div className={styles.statsGrid}>
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+        </div>
+        <div className={styles.billsList}>
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.billsContainer}>
@@ -84,44 +113,41 @@ const Bills: React.FC = () => {
           <p className={styles.subtitle}>Track your recurring payments</p>
         </div>
         {!showAddForm && (
-          <button 
-            className={styles.addBtn}
-            onClick={() => setShowAddForm(true)}
-          >
-            <Plus size={20} />
-            <span>Add Bill</span>
-          </button>
+          <Button variant="primary" size="sm" icon={<Plus size={16} />} onClick={() => setShowAddForm(true)}>
+            Add Bill
+          </Button>
         )}
       </header>
 
       {showAddForm && (
         <form className={styles.addForm} onSubmit={handleAddBill}>
           <div className={styles.formHeader}>
-            <h3>New Bill</h3>
-            <button type="button" onClick={() => setShowAddForm(false)} className={styles.closeBtn}><X size={20} /></button>
+            <h3>{editingBillId ? 'Edit Bill' : 'New Bill'}</h3>
+            <button type="button" onClick={() => { setShowAddForm(false); setEditingBillId(null); }} className={styles.closeBtn}><X size={20} /></button>
           </div>
           <div className={styles.inputGroup}>
             <input type="text" placeholder="Bill Name" value={newBillName} onChange={(e) => setNewBillName(e.target.value)} className={styles.input} required />
             <input type="number" placeholder="Amount" value={newBillAmount} onChange={(e) => setNewBillAmount(e.target.value)} className={styles.input} required min="0.01" step="0.01" />
             <input type="date" value={newBillDue} onChange={(e) => setNewBillDue(e.target.value)} className={styles.input} required />
-            <select value={newBillCat} onChange={(e) => setNewBillCat(e.target.value)} className={styles.input} required>
-              <option value="">Select Category</option>
-              {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-            </select>
-            <button type="submit" className={styles.submitBtn}>Save Bill</button>
+            <Select
+              value={newBillCat}
+              options={categoryOptions}
+              onChange={setNewBillCat}
+            />
+            <Button type="submit" variant="primary" size="md">Save Bill</Button>
           </div>
         </form>
       )}
 
       <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
+        <Card variant="elevated">
           <span className={styles.statLabel}>Total Monthly Bills</span>
           <h2 className={styles.statValue}>{formatCompactCurrency(totalBillsAmount, settings.currency)}</h2>
-        </div>
-        <div className={styles.statCard}>
+        </Card>
+        <Card variant="elevated">
           <span className={styles.statLabel}>Unpaid This Month</span>
           <h2 className={`${styles.statValue} ${styles.unpaid}`}>{unpaidCount}</h2>
-        </div>
+        </Card>
       </div>
 
       <div className={styles.billsList}>
@@ -136,11 +162,11 @@ const Bills: React.FC = () => {
             
             let statusObj = { color: 'var(--text-secondary)', text: 'Upcoming' };
             if (bill.isPaid) {
-              statusObj = { color: 'var(--success)', text: '🟢 Paid' };
+              statusObj = { color: 'var(--color-success)', text: '🟢 Paid' };
             } else if (diffDays < 0) {
-              statusObj = { color: 'var(--danger)', text: '🔴 Overdue' };
+              statusObj = { color: 'var(--color-danger)', text: '🔴 Overdue' };
             } else if (diffDays <= 3) {
-              statusObj = { color: 'var(--warning)', text: '🟡 Due soon' };
+              statusObj = { color: 'var(--color-warning)', text: '🟡 Due soon' };
             } else {
               statusObj = { color: 'var(--text-secondary)', text: '⚪ Upcoming' };
             }
@@ -149,7 +175,7 @@ const Bills: React.FC = () => {
               <div key={bill.id} className={`${styles.billCard} ${bill.isPaid ? styles.paid : ''}`}>
                 <button 
                   className={styles.checkBtn} 
-                  aria-label={bill.isPaid ? "Mark unpaid" : "Mark paid"}
+                  aria-label={bill.isPaid ? 'Mark unpaid' : 'Mark paid'}
                   onClick={() => togglePaid(bill.id)}
                 >
                   {bill.isPaid ? <CheckCircle2 size={28} className={styles.checkedIcon} /> : <Circle size={28} className={styles.uncheckedIcon} />}
@@ -177,18 +203,18 @@ const Bills: React.FC = () => {
                 </div>
 
                 <div className={styles.actionBtns}>
-                  <button onClick={() => handleEditBill(bill)} className={styles.iconBtn} aria-label="Edit"><Edit2 size={16} /></button>
-                  <button onClick={() => setDeleteBillId(bill.id)} className={styles.iconBtn} aria-label="Delete"><Trash2 size={16} /></button>
+                  <button onClick={() => handleEditBill(bill)} className={styles.iconBtn} aria-label="Edit bill"><Edit2 size={16} /></button>
+                  <button onClick={() => setDeleteBillId(bill.id)} className={styles.iconBtn} aria-label="Delete bill"><Trash2 size={16} /></button>
                 </div>
               </div>
-            )
+            );
           })
         ) : (
           <div className={styles.emptyState}>
             <Calendar size={48} className={styles.emptyIcon} />
             <h3>No bills added</h3>
             <p>Keep track of recurring payments and due dates.</p>
-            <button className={styles.emptyStateBtn} onClick={() => setShowAddForm(true)}>Add Bill</button>
+            <Button variant="primary" onClick={() => setShowAddForm(true)}>Add Bill</Button>
           </div>
         )}
       </div>
@@ -199,7 +225,10 @@ const Bills: React.FC = () => {
         message="Are you sure you want to delete this bill?"
         confirmText="Delete Bill"
         onConfirm={() => {
-          if (deleteBillId) deleteBill(deleteBillId);
+          if (deleteBillId) {
+            deleteBill(deleteBillId);
+            setDeleteBillId(null);
+          }
         }}
         onCancel={() => setDeleteBillId(null)}
       />

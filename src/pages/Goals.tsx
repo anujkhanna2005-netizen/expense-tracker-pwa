@@ -4,10 +4,15 @@ import { formatCurrency, formatCompactCurrency } from '../utils/format';
 import { Plus, Target, Trophy, X, Trash2, Edit2 } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import AddFundsModal from '../components/AddFundsModal';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Skeleton from '../components/ui/Skeleton';
+import ProgressBar from '../components/ui/ProgressBar';
 import styles from './Goals.module.css';
+import type { Goal } from '../types';
 
 const Goals: React.FC = () => {
-  const { goals, settings, addGoal, updateGoal, deleteGoal } = useData();
+  const { goals, settings, isLoading, addGoal, updateGoal, deleteGoal } = useData();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   
@@ -15,7 +20,7 @@ const Goals: React.FC = () => {
   const [newGoalTarget, setNewGoalTarget] = useState('');
 
   const [deleteGoalId, setDeleteGoalId] = useState<string | null>(null);
-  const [fundGoal, setFundGoal] = useState<any>(null);
+  const [fundGoal, setFundGoal] = useState<Goal | null>(null);
 
   React.useEffect(() => {
     const handleOpen = () => setShowAddForm(true);
@@ -23,7 +28,7 @@ const Goals: React.FC = () => {
     return () => window.removeEventListener('openAddGoal', handleOpen);
   }, []);
 
-  const handleEditGoal = (goal: any) => {
+  const handleEditGoal = (goal: Goal) => {
     setEditingGoalId(goal.id);
     setNewGoalName(goal.name);
     setNewGoalTarget(goal.targetAmount.toString());
@@ -56,6 +61,21 @@ const Goals: React.FC = () => {
   const totalSaved = goals.reduce((sum, g) => sum + g.currentAmount, 0);
   const totalTarget = goals.reduce((sum, g) => sum + g.targetAmount, 0);
 
+  if (isLoading) {
+    return (
+      <div className={styles.goalsContainer}>
+        <header className={styles.header}>
+          <Skeleton variant="line" width={160} height={32} />
+        </header>
+        <Skeleton variant="card" height={100} />
+        <div className={styles.goalsList}>
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.goalsContainer}>
       <header className={styles.header}>
@@ -64,21 +84,17 @@ const Goals: React.FC = () => {
           <p className={styles.subtitle}>Track your big purchases</p>
         </div>
         {!showAddForm && (
-          <button 
-            className={styles.addBtn}
-            onClick={() => setShowAddForm(true)}
-          >
-            <Plus size={20} />
-            <span>Add Goal</span>
-          </button>
+          <Button variant="primary" size="sm" icon={<Plus size={16} />} onClick={() => setShowAddForm(true)}>
+            Add Goal
+          </Button>
         )}
       </header>
 
       {showAddForm && (
         <form className={styles.addForm} onSubmit={handleAddGoal}>
           <div className={styles.formHeader}>
-            <h3>New Goal</h3>
-            <button type="button" onClick={() => setShowAddForm(false)} className={styles.closeBtn}><X size={20} /></button>
+            <h3>{editingGoalId ? 'Edit Goal' : 'New Goal'}</h3>
+            <button type="button" onClick={() => { setShowAddForm(false); setEditingGoalId(null); }} className={styles.closeBtn}><X size={20} /></button>
           </div>
           <div className={styles.inputGroup}>
             <input 
@@ -99,14 +115,14 @@ const Goals: React.FC = () => {
               step="0.01"
               className={styles.input}
             />
-            <button type="submit" className={styles.submitBtn}>Save Goal</button>
+            <Button type="submit" variant="primary" size="md">Save Goal</Button>
           </div>
         </form>
       )}
 
-      <div className={styles.summaryCard}>
+      <Card variant="elevated" className={styles.summaryCard}>
         <div className={styles.summaryHeader}>
-          <Trophy className={styles.trophyIcon} size={24} />
+          <Trophy className={styles.trophyIcon} size={24} aria-hidden="true" />
           <h3>Total Savings Progress</h3>
         </div>
         <div className={styles.summaryStats}>
@@ -119,19 +135,22 @@ const Goals: React.FC = () => {
             <span className={styles.statAmount}>{formatCompactCurrency(totalTarget, settings.currency)}</span>
           </div>
         </div>
-      </div>
+        {totalTarget > 0 && (
+          <ProgressBar value={totalSaved} max={totalTarget} size="lg" style={{ marginTop: '12px' }} />
+        )}
+      </Card>
 
       <div className={styles.goalsList}>
         {goals.length > 0 ? (
           goals.map(goal => {
-            const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
+            const progress = goal.targetAmount > 0 ? Math.min((goal.currentAmount / goal.targetAmount) * 100, 100) : 0;
             const isCompleted = progress >= 100;
             
             return (
-              <div key={goal.id} className={styles.goalCard}>
+              <Card key={goal.id} variant="flat" className={styles.goalCard}>
                 <div className={styles.goalHeader}>
                   <div className={styles.goalTitleGroup}>
-                    <Target size={20} className={isCompleted ? styles.completedIcon : styles.targetIcon} />
+                    <Target size={20} className={isCompleted ? styles.completedIcon : styles.targetIcon} aria-hidden="true" />
                     <h3 className={styles.goalName}>{goal.name}</h3>
                   </div>
                   <div className={styles.goalAmounts}>
@@ -141,37 +160,33 @@ const Goals: React.FC = () => {
                 </div>
                 
                 <div className={styles.progressContainer}>
-                  <div className={styles.progressBar}>
-                    <div 
-                      className={`${styles.progressFill} ${isCompleted ? styles.progressCompleted : ''}`} 
-                      style={{ width: `${progress}%` }} 
-                    />
-                  </div>
+                  <ProgressBar value={goal.currentAmount} max={goal.targetAmount} size="sm" />
                   <span className={styles.progressText}>{progress.toFixed(1)}%</span>
                 </div>
                 
                 <div className={styles.goalActions}>
-                  <button 
-                    className={styles.fundBtn} 
+                  <Button 
+                    variant="secondary"
+                    size="sm"
                     disabled={isCompleted}
                     onClick={() => setFundGoal(goal)}
                   >
                     Add Funds
-                  </button>
+                  </Button>
                   <div className={styles.actionBtns}>
-                    <button onClick={() => handleEditGoal(goal)} className={styles.iconBtn} aria-label="Edit"><Edit2 size={16} /></button>
-                    <button onClick={() => setDeleteGoalId(goal.id)} className={styles.iconBtn} aria-label="Delete"><Trash2 size={16} /></button>
+                    <button onClick={() => handleEditGoal(goal)} className={styles.iconBtn} aria-label="Edit goal"><Edit2 size={16} /></button>
+                    <button onClick={() => setDeleteGoalId(goal.id)} className={styles.iconBtn} aria-label="Delete goal"><Trash2 size={16} /></button>
                   </div>
                 </div>
-              </div>
-            )
+              </Card>
+            );
           })
         ) : (
           <div className={styles.emptyState}>
-            <Target size={48} className={styles.emptyIcon} />
+            <Target size={48} className={styles.emptyIcon} aria-hidden="true" />
             <h3>No savings goals yet</h3>
             <p>Create a goal and start saving toward something important.</p>
-            <button className={styles.emptyStateBtn} onClick={() => setShowAddForm(true)}>Add Goal</button>
+            <Button variant="primary" onClick={() => setShowAddForm(true)}>Add Goal</Button>
           </div>
         )}
       </div>
@@ -182,7 +197,10 @@ const Goals: React.FC = () => {
         message="Are you sure you want to delete this goal? All progress will be removed."
         confirmText="Delete Goal"
         onConfirm={() => {
-          if (deleteGoalId) deleteGoal(deleteGoalId);
+          if (deleteGoalId) {
+            deleteGoal(deleteGoalId);
+            setDeleteGoalId(null);
+          }
         }}
         onCancel={() => setDeleteGoalId(null)}
       />

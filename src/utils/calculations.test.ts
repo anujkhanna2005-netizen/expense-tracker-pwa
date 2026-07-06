@@ -2,10 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { 
   calculateTotalExpenses, 
   calculateBudgetProgress, 
-  calculateGoalProgress, 
-  calculateSettlements 
+  calculateGoalProgress
 } from './calculations';
-import type { Expense, SplitParticipant } from '../types';
+import type { Expense } from '../types';
 
 describe('Financial Calculations', () => {
   
@@ -29,21 +28,5 @@ describe('Financial Calculations', () => {
     expect(calculateGoalProgress(200, 1000)).toBe(20);
     expect(calculateGoalProgress(1000, 1000)).toBe(100);
     expect(calculateGoalProgress(1200, 1000)).toBe(100); // capped at 100%
-  });
-
-  it('calculates simple roommate settlements correctly', () => {
-    const participants: SplitParticipant[] = [
-      { id: '1', name: 'Alice', amountOwed: 0, isSettled: false },
-      { id: '2', name: 'Bob', amountOwed: 0, isSettled: false },
-      { id: '3', name: 'Charlie', amountOwed: 0, isSettled: false }
-    ];
-    
-    // Total $90 paid by Alice (id 1)
-    const settlements = calculateSettlements(participants, '1', 90);
-    
-    // Each share is 30. Bob and Charlie owe Alice 30.
-    expect(settlements['2']).toBe(30);
-    expect(settlements['3']).toBe(30);
-    expect(settlements['1']).toBeUndefined(); // Payer doesn't owe themselves
   });
 });

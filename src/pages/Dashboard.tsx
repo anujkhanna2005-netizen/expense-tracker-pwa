@@ -1,14 +1,23 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { formatCompactCurrency, formatCurrency } from '../utils/format';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
+import Card from '../components/ui/Card';
+import Skeleton from '../components/ui/Skeleton';
+import Input from '../components/ui/Input';
+import EditExpenseModal from '../components/EditExpenseModal';
+import type { Expense } from '../types';
 import styles from './Dashboard.module.css';
 
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6b7280'];
+
 const Dashboard: React.FC = () => {
-  const { expenses, categories, settings } = useData();
+  const { expenses, categories, settings, isLoading } = useData();
   const navigate = useNavigate();
+  const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const currentMonth = new Date().toISOString().slice(0, 7); // 'YYYY-MM'
   
@@ -47,19 +56,52 @@ const Dashboard: React.FC = () => {
   const budgetPercent = budgetLimit > 0 ? Math.min((totalSpent / budgetLimit) * 100, 100) : 0;
 
   // Chart data
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6b7280'];
-  const chartData = categoryTotals.map((cat, index) => ({
-    name: cat.name,
-    value: cat.amount,
-    fill: COLORS[index % COLORS.length]
-  }));
+  const chartData = useMemo(() => {
+    return categoryTotals.map((cat, index) => ({
+      name: cat.name,
+      value: cat.amount,
+      fill: COLORS[index % COLORS.length]
+    }));
+  }, [categoryTotals]);
 
-  // Recent transactions
-  const recentTransactions = [...expenses]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
+  // Filtered recent transactions
+  const filteredTransactions = useMemo(() => {
+    const sorted = [...expenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    if (!searchQuery.trim()) {
+      return sorted.slice(0, 5);
+    }
+    const searchLower = searchQuery.toLowerCase();
+    return sorted
+      .filter(exp => {
+        const cat = categories.find(c => c.id === exp.categoryId);
+        const matchNote = exp.notes?.toLowerCase().includes(searchLower) || false;
+        const matchCat = cat?.name.toLowerCase().includes(searchLower) || false;
+        return matchNote || matchCat;
+      })
+      .slice(0, 5);
+  }, [expenses, categories, searchQuery]);
 
   const currentMonthName = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  if (isLoading) {
+    return (
+      <div className={styles.dashboard}>
+        <header className={styles.header}>
+          <Skeleton variant="line" width={150} height={32} />
+          <Skeleton variant="line" width={220} height={16} style={{ marginTop: '8px' }} />
+        </header>
+        <section className={styles.snapshot}>
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+        </section>
+        <div className={styles.grid}>
+          <Skeleton variant="card" height={250} />
+          <Skeleton variant="card" height={250} />
+        </div>
+      </div>
+    );
+  }
 
   if (expenses.length === 0) {
     return (
@@ -92,7 +134,7 @@ const Dashboard: React.FC = () => {
 
       {/* Monthly Snapshot */}
       <section className={styles.snapshot}>
-        <div className={styles.card}>
+        <Card variant="interactive" onClick={() => navigate('/expenses')}>
           <span className={styles.cardLabel}>Spent This Month</span>
           <h2 className={styles.cardValue}>
             {formatCompactCurrency(totalSpent, settings.currency)}
@@ -110,12 +152,12 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
+        </Card>
 
-        <div className={styles.card}>
+        <Card variant="interactive" onClick={() => navigate('/settings')}>
           <span className={styles.cardLabel}>Budget Left</span>
           {budgetLimit > 0 ? (
-            <h2 className={styles.cardValue} style={{ color: budgetRemaining <= 0 ? 'var(--danger)' : 'var(--text-primary)'}}>
+            <h2 className={styles.cardValue} style={{ color: budgetRemaining <= 0 ? 'var(--color-danger)' : 'var(--text-primary)'}}>
               {formatCompactCurrency(budgetRemaining, settings.currency)}
             </h2>
           ) : (
@@ -123,15 +165,21 @@ const Dashboard: React.FC = () => {
               <p className={styles.emptyText}>Set a monthly budget to track your spending.</p>
               <button 
                 className={styles.setBudgetBtn}
-                onClick={() => navigate('/settings')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/settings');
+                }}
               >
                 Set Budget
               </button>
             </div>
           )}
-        </div>
+        </Card>
 
-        <div className={styles.card}>
+        <Card 
+          variant={topCategory ? "interactive" : "flat"} 
+          onClick={() => topCategory && navigate(`/expenses?categoryId=${topCategory.id}`)}
+        >
           <span className={styles.cardLabel}>Biggest Expense</span>
           {topCategory ? (
             <div className={styles.topCat}>
@@ -144,14 +192,14 @@ const Dashboard: React.FC = () => {
           ) : (
             <p className={styles.emptyText}>No expenses yet.</p>
           )}
-        </div>
+        </Card>
       </section>
 
       {/* Main Content Grid */}
       <div className={styles.grid}>
         {/* Chart */}
-        {chartData.length > 0 && (
-          <section className={`${styles.card} ${styles.chartCard}`}>
+        {chartData.length > 0 ? (
+          <Card variant="flat" className={styles.chartCard}>
             <h3 className={styles.sectionTitle}>Where did your money go?</h3>
             <div className={styles.chartContainer}>
               <ResponsiveContainer width="100%" height={150}>
@@ -191,21 +239,31 @@ const Dashboard: React.FC = () => {
                 <p>💡 <strong>Insight:</strong> {topCategory.name} was your biggest expense this month, making up {((topCategory.amount / totalSpent) * 100).toFixed(0)}% of your spending.</p>
               </div>
             )}
-          </section>
-        )}
+          </Card>
+        ) : null}
 
         {/* Recent Transactions */}
-        <section className={styles.card}>
-          <div className={styles.sectionHeader}>
-            <h3 className={styles.sectionTitle}>Recent Transactions</h3>
+        <Card variant="flat">
+          <div className={styles.sectionHeader} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+            <h3 className={styles.sectionTitle} style={{ margin: 0 }}>Recent Transactions</h3>
+            <Input
+              placeholder="Search recent notes or categories..."
+              value={searchQuery}
+              onChange={setSearchQuery}
+            />
           </div>
           
           <div className={styles.transactionList}>
-            {recentTransactions.length > 0 ? (
-              recentTransactions.map(exp => {
+            {filteredTransactions.length > 0 ? (
+              filteredTransactions.map(exp => {
                 const cat = categories.find(c => c.id === exp.categoryId);
                 return (
-                  <div key={exp.id} className={styles.transaction}>
+                  <div 
+                    key={exp.id} 
+                    className={styles.transaction} 
+                    onClick={() => setEditExpense(exp)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <div className={styles.txnIcon}>{cat?.icon || '📦'}</div>
                     <div className={styles.txnDetails}>
                       <span className={styles.txnCat}>{cat?.name || 'Unknown'}</span>
@@ -219,12 +277,18 @@ const Dashboard: React.FC = () => {
               })
             ) : (
               <div className={styles.emptyState}>
-                <p>No transactions yet.</p>
+                <p>No transactions found.</p>
               </div>
             )}
           </div>
-        </section>
+        </Card>
       </div>
+
+      <EditExpenseModal
+        isOpen={!!editExpense}
+        expense={editExpense}
+        onClose={() => setEditExpense(null)}
+      />
     </div>
   );
 };
