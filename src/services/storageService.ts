@@ -1,5 +1,15 @@
 import localforage from 'localforage';
 
+// Explicitly configure localforage to guarantee clean initialization
+localforage.config({
+  name: 'expense-tracker-pwa-db',
+  storeName: 'expense_tracker_store',
+  driver: [
+    localforage.INDEXEDDB,
+    localforage.LOCALSTORAGE
+  ]
+});
+
 export class StorageQuotaError extends Error {
   constructor(message = 'Storage quota exceeded') {
     super(message);

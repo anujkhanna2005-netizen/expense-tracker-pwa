@@ -4,6 +4,7 @@ import { useCategoryStore } from '../stores/categoryStore';
 import { useBillStore } from '../stores/billStore';
 import { useGoalStore } from '../stores/goalStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useIncomeStore } from '../stores/incomeStore';
 
 export function useHydration() {
   const [hydrated, setHydrated] = useState(
@@ -11,7 +12,8 @@ export function useHydration() {
     useCategoryStore.persist.hasHydrated() &&
     useBillStore.persist.hasHydrated() &&
     useGoalStore.persist.hasHydrated() &&
-    useSettingsStore.persist.hasHydrated()
+    useSettingsStore.persist.hasHydrated() &&
+    useIncomeStore.persist.hasHydrated()
   );
 
   useEffect(() => {
@@ -23,7 +25,8 @@ export function useHydration() {
         useCategoryStore.persist.hasHydrated() &&
         useBillStore.persist.hasHydrated() &&
         useGoalStore.persist.hasHydrated() &&
-        useSettingsStore.persist.hasHydrated();
+        useSettingsStore.persist.hasHydrated() &&
+        useIncomeStore.persist.hasHydrated();
       if (isHydrated) {
         setHydrated(true);
       }
@@ -34,6 +37,7 @@ export function useHydration() {
     const unsub3 = useBillStore.persist.onFinishHydration(check);
     const unsub4 = useGoalStore.persist.onFinishHydration(check);
     const unsub5 = useSettingsStore.persist.onFinishHydration(check);
+    const unsub6 = useIncomeStore.persist.onFinishHydration(check);
 
     check();
 
@@ -43,6 +47,7 @@ export function useHydration() {
       unsub3();
       unsub4();
       unsub5();
+      unsub6();
     };
   }, [hydrated]);
 
