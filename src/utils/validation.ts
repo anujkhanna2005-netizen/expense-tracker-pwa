@@ -57,7 +57,10 @@ export const settingsSchema = z.object({
   currency: z.string().min(1),
   monthlyBudgetLimit: z.number().positive('Monthly budget limit must be positive').optional(),
   // Per-category budgets: Record<categoryId, limit> — optional, defaults to {} on first load
-  categoryBudgets: z.record(z.string(), z.number().nonnegative()).optional()
+  categoryBudgets: z.record(z.string(), z.number().nonnegative()).optional(),
+  pinEnabled: z.boolean().optional(),
+  pinHash: z.string().optional(),
+  pinSalt: z.string().optional(),
 });
 
 export const importDataSchema = z.object({

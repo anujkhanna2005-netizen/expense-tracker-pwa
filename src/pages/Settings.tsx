@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { Moon, Sun, Download, Upload, RotateCcw, Tags, FileJson, FileText } from 'lucide-react';
+import { Moon, Sun, Download, Upload, RotateCcw, Tags, FileJson, FileText, Shield } from 'lucide-react';
 import ManageCategoriesModal from '../components/ManageCategoriesModal';
 import SetBudgetModal from '../components/SetBudgetModal';
 import ConfirmModal from '../components/ConfirmModal';
 import CategoryBudgetManager from '../components/CategoryBudgetManager';
+import Modal from '../components/ui/Modal';
+import { encryptionService } from '../services/encryptionService';
 import Select from '../components/ui/Select';
 import Toggle from '../components/ui/Toggle';
 import Button from '../components/ui/Button';
@@ -56,6 +58,99 @@ const Settings: React.FC = () => {
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [showResetConfirm1, setShowResetConfirm1] = useState(false);
   const [showResetConfirm2, setShowResetConfirm2] = useState(false);
+
+  // Security lock state
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [pinValue, setPinValue] = useState('');
+  const [confirmPinValue, setConfirmPinValue] = useState('');
+  const [currentPinValue, setCurrentPinValue] = useState('');
+  const [pinSetupStep, setPinSetupStep] = useState<'verify' | 'set' | 'confirm'>('set');
+  const [isDisablingPin, setIsDisablingPin] = useState(false);
+
+  const handleSecurityToggle = () => {
+    if (settings.pinEnabled) {
+      setPinSetupStep('verify');
+      setPinValue('');
+      setCurrentPinValue('');
+      setIsDisablingPin(true);
+      setIsPinModalOpen(true);
+    } else {
+      setPinSetupStep('set');
+      setPinValue('');
+      setConfirmPinValue('');
+      setIsDisablingPin(false);
+      setIsPinModalOpen(true);
+    }
+  };
+
+  const handlePinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (pinSetupStep === 'verify') {
+      if (!settings.pinSalt || !settings.pinHash) {
+        toast('Security state is corrupted. Please reset app data.', 'error');
+        return;
+      }
+      const hash = await encryptionService.derivePinHash(currentPinValue, settings.pinSalt);
+      if (hash !== settings.pinHash) {
+        toast('Incorrect PIN', 'error');
+        return;
+      }
+
+      if (isDisablingPin) {
+        const nextSuccess = updateSettings({ pinEnabled: false, pinHash: undefined, pinSalt: undefined });
+        if (nextSuccess) {
+          await storageService.set('expenses', useExpenseStore.getState().expenses);
+          await storageService.set('categories', useCategoryStore.getState().categories);
+          await storageService.set('bills', useBillStore.getState().bills);
+          await storageService.set('goals', useGoalStore.getState().goals);
+          await storageService.set('incomes', useIncomeStore.getState().incomes);
+          encryptionService.setSessionKey(null);
+          toast('PIN lock and encryption disabled successfully.', 'success');
+        }
+        setIsPinModalOpen(false);
+      } else {
+        setPinSetupStep('set');
+        setPinValue('');
+        setConfirmPinValue('');
+      }
+    } else if (pinSetupStep === 'set') {
+      if (pinValue.length < 4 || pinValue.length > 6 || !/^\d+$/.test(pinValue)) {
+        toast('PIN must be 4 to 6 numeric digits', 'error');
+        return;
+      }
+      setPinSetupStep('confirm');
+    } else if (pinSetupStep === 'confirm') {
+      if (pinValue !== confirmPinValue) {
+        toast('PINs do not match. Please try again.', 'error');
+        setPinSetupStep('set');
+        setPinValue('');
+        setConfirmPinValue('');
+        return;
+      }
+
+      const salt = encryptionService.generateSalt();
+      const hash = await encryptionService.derivePinHash(pinValue, salt);
+      await encryptionService.deriveSessionKey(pinValue, salt);
+
+      const nextSuccess = updateSettings({
+        pinEnabled: true,
+        pinHash: hash,
+        pinSalt: salt
+      });
+
+      if (nextSuccess) {
+        await storageService.set('expenses', useExpenseStore.getState().expenses);
+        await storageService.set('categories', useCategoryStore.getState().categories);
+        await storageService.set('bills', useBillStore.getState().bills);
+        await storageService.set('goals', useGoalStore.getState().goals);
+        await storageService.set('incomes', useIncomeStore.getState().incomes);
+        toast('PIN lock and encryption enabled successfully.', 'success');
+      }
+
+      setIsPinModalOpen(false);
+    }
+  };
 
   const toggleDarkMode = () => {
     updateSettings({ darkMode: !settings.darkMode });
@@ -381,6 +476,29 @@ const Settings: React.FC = () => {
       </div>
 
       <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>Security</h2>
+        <div className={styles.settingCard}>
+          <div className={styles.settingInfo}>
+            <div className={styles.settingIconWrapper} aria-hidden="true">
+              <Shield size={20} />
+            </div>
+            <div>
+              <h3 className={styles.settingName}>PIN Lock & Encryption</h3>
+              <p className={styles.settingDesc}>Protect and encrypt your local data with a secure PIN</p>
+            </div>
+          </div>
+          <Toggle
+            checked={settings.pinEnabled || false}
+            onChange={handleSecurityToggle}
+            ariaLabel="Toggle PIN Lock security"
+          />
+        </div>
+        <p className={styles.notificationWarning} style={{ marginTop: '12px' }}>
+          🔒 <strong>Local Device Lock:</strong> This encrypts your local database at rest. It does not secure against keyloggers or anyone who knows your device password, nor does it secure memory while the browser is currently unlocked and open.
+        </p>
+      </div>
+
+      <div className={styles.section}>
         <h2 className={`${styles.sectionTitle} ${styles.dangerText}`}>Danger Zone</h2>
         
         <div className={styles.settingCard}>
@@ -440,6 +558,127 @@ const Settings: React.FC = () => {
         onConfirm={handleResetConfirm2}
         onCancel={() => setShowResetConfirm2(false)}
       />
+
+      <Modal
+        isOpen={isPinModalOpen}
+        onClose={() => setIsPinModalOpen(false)}
+        title={
+          pinSetupStep === 'verify'
+            ? 'Verify Current PIN'
+            : pinSetupStep === 'set'
+            ? 'Set Security PIN'
+            : 'Confirm Security PIN'
+        }
+        variant="dialog"
+        accentColor="primary"
+      >
+        <form onSubmit={handlePinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {pinSetupStep === 'verify' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label htmlFor="current-pin-input" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                Enter your current PIN to authorize this action:
+              </label>
+              <input
+                id="current-pin-input"
+                type="password"
+                maxLength={6}
+                pattern="\d*"
+                inputMode="numeric"
+                value={currentPinValue}
+                onChange={(e) => setCurrentPinValue(e.target.value.replace(/\D/g, ''))}
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-default)',
+                  backgroundColor: 'var(--surface-1)',
+                  color: 'var(--text-primary)',
+                  fontSize: '20px',
+                  textAlign: 'center',
+                  letterSpacing: '8px',
+                  width: '100%'
+                }}
+                autoFocus
+                required
+              />
+            </div>
+          )}
+
+          {pinSetupStep === 'set' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                Create a 4 to 6 digit security PIN to protect your financial data.
+              </p>
+              <div style={{ padding: '10px', backgroundColor: 'var(--color-primary-soft)', border: '1px solid var(--color-primary)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '13px', marginBottom: '8px' }}>
+                ⚠️ <strong>WARNING:</strong> If you forget this PIN, your database is permanently unrecoverable. <strong>Consider exporting a JSON backup first.</strong>
+              </div>
+              <label htmlFor="new-pin-input" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                Enter new PIN:
+              </label>
+              <input
+                id="new-pin-input"
+                type="password"
+                maxLength={6}
+                pattern="\d*"
+                inputMode="numeric"
+                value={pinValue}
+                onChange={(e) => setPinValue(e.target.value.replace(/\D/g, ''))}
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-default)',
+                  backgroundColor: 'var(--surface-1)',
+                  color: 'var(--text-primary)',
+                  fontSize: '20px',
+                  textAlign: 'center',
+                  letterSpacing: '8px',
+                  width: '100%'
+                }}
+                autoFocus
+                required
+              />
+            </div>
+          )}
+
+          {pinSetupStep === 'confirm' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label htmlFor="confirm-pin-input" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                Re-enter PIN to confirm:
+              </label>
+              <input
+                id="confirm-pin-input"
+                type="password"
+                maxLength={6}
+                pattern="\d*"
+                inputMode="numeric"
+                value={confirmPinValue}
+                onChange={(e) => setConfirmPinValue(e.target.value.replace(/\D/g, ''))}
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-default)',
+                  backgroundColor: 'var(--surface-1)',
+                  color: 'var(--text-primary)',
+                  fontSize: '20px',
+                  textAlign: 'center',
+                  letterSpacing: '8px',
+                  width: '100%'
+                }}
+                autoFocus
+                required
+              />
+            </div>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
+            <Button type="button" variant="secondary" onClick={() => setIsPinModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary">
+              {pinSetupStep === 'set' ? 'Continue' : 'Submit'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import localforage from 'localforage';
+import { encryptionService } from './encryptionService';
 
 // Explicitly configure localforage to guarantee clean initialization
 localforage.config({
@@ -35,7 +36,29 @@ function isQuotaError(err: any): boolean {
 export const storageService = {
   async get<T>(key: string): Promise<T | null> {
     try {
-      return await localforage.getItem<T>(key);
+      const raw = await localforage.getItem<any>(key);
+      if (!raw || key === 'settings') {
+        return raw as T | null;
+      }
+
+      // Check if encryption is enabled
+      const settingsState = await localforage.getItem<any>('settings');
+      const pinEnabled = settingsState?.state?.settings?.pinEnabled;
+
+      if (pinEnabled && typeof raw === 'string' && raw.includes(':')) {
+        try {
+          const decrypted = await encryptionService.decrypt(raw);
+          return JSON.parse(decrypted) as T;
+        } catch (decryptErr) {
+          if (import.meta.env.DEV) {
+            console.error('Decryption failed for key:', key, decryptErr);
+          }
+          // If decryption fails (e.g. key missing/mismatched), return null or let it bubble
+          return null;
+        }
+      }
+
+      return raw as T | null;
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error(`storageService.get error for key "${key}":`, error);
@@ -46,6 +69,21 @@ export const storageService = {
 
   async set<T>(key: string, value: T): Promise<T> {
     try {
+      if (key === 'settings') {
+        return await localforage.setItem<T>(key, value);
+      }
+
+      // Check if encryption is enabled
+      const settingsState = await localforage.getItem<any>('settings');
+      const pinEnabled = settingsState?.state?.settings?.pinEnabled;
+
+      if (pinEnabled && encryptionService.hasSessionKey()) {
+        const plaintext = JSON.stringify(value);
+        const ciphertext = await encryptionService.encrypt(plaintext);
+        await localforage.setItem<string>(key, ciphertext);
+        return value;
+      }
+
       return await localforage.setItem<T>(key, value);
     } catch (error: any) {
       if (import.meta.env.DEV) {
@@ -80,4 +118,5 @@ export const storageService = {
     }
   }
 };
+
 export default storageService;

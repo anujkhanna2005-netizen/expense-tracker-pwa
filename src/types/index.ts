@@ -48,4 +48,7 @@ export interface Settings {
   monthlyBudgetLimit?: number;
   /** Per-category spending limits. Key = categoryId, value = limit amount. 0 or absent = no limit */
   categoryBudgets?: Record<string, number>;
+  pinEnabled?: boolean;
+  pinHash?: string;
+  pinSalt?: string;
 }
