@@ -14,7 +14,6 @@ const Expenses = lazy(() => import('./pages/Expenses'));
 const Bills = lazy(() => import('./pages/Bills'));
 const Goals = lazy(() => import('./pages/Goals'));
 const Settings = lazy(() => import('./pages/Settings'));
-const StyleGuide = lazy(() => import('./pages/StyleGuide'));
 const Reports = lazy(() => import('./pages/Reports'));
 
 function PageSkeleton() {
@@ -56,7 +55,6 @@ function App() {
                 <Route path="/goals" element={<Goals />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="/style-guide" element={<StyleGuide />} />
               </Routes>
             </Suspense>
           </ErrorBoundary>

@@ -107,7 +107,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     setIsAddIncomeOpen(true);
                   }}
                 >
-                  <span className={styles.fabMenuItemIcon} style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981' }}>
+                  <span className={styles.fabMenuItemIcon} style={{ background: 'var(--color-primary-soft)', color: 'var(--color-success)' }}>
                     <TrendingUp size={18} />
                   </span>
                   <span>Add Income</span>

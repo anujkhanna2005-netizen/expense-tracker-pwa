@@ -51,7 +51,7 @@ interface ToastContainerProps {
 
 const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, removeToast }) => {
   return (
-    <div className={styles.toastContainer}>
+    <div className={styles.toastContainer} aria-live="polite">
       {toasts.map((toast) => (
         <Toast key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
       ))}

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
 import { PAYMENT_METHODS } from '../types';
 import type { PaymentMethod } from '../types';
 import { useExpenses } from '../hooks/useExpenses';
 import { useCategories } from '../hooks/useCategories';
 import { useSettings } from '../hooks/useSettings';
 import { useToast } from '../components/ui/ToastProvider';
+import Modal from './ui/Modal';
 import styles from './QuickAddExpense.module.css';
 
 interface QuickAddExpenseProps {
@@ -62,21 +62,9 @@ const QuickAddExpense: React.FC<QuickAddExpenseProps> = ({ isOpen, onClose }) =>
     }
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
   return (
-    <div className={styles.backdrop} onClick={handleBackdropClick}>
-      <div className={styles.modal}>
-        <div className={styles.header}>
-          <h2>Add Expense</h2>
-          <button type="button" onClick={onClose} className={styles.closeBtn} aria-label="Close">
-            <X size={24} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSave} className={styles.form}>
+    <Modal isOpen={isOpen} onClose={onClose} title="Add Expense" variant="sheet" accentColor="primary">
+      <form onSubmit={handleSave} className={styles.form}>
           <div className={styles.amountInputWrapper}>
             <span className={styles.currencySymbol}>{settings.currency}</span>
             <input
@@ -137,8 +125,7 @@ const QuickAddExpense: React.FC<QuickAddExpenseProps> = ({ isOpen, onClose }) =>
             Save Expense
           </button>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
 

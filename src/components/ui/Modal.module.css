@@ -1,0 +1,112 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: var(--space-4);
+  animation: fadeIn var(--duration-fast) var(--ease-out);
+}
+
+.content {
+  background-color: var(--surface-0);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow-md);
+  animation: scaleUp var(--duration-normal) var(--ease-spring);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast), color var(--duration-fast);
+}
+
+.closeBtn:hover {
+  background-color: var(--surface-2);
+  color: var(--text-primary);
+}
+
+.body {
+  padding: var(--space-5);
+  overflow-y: auto;
+  max-height: calc(100vh - 160px);
+}
+
+/* Accent Colors */
+.primary .title {
+  border-left: 3px solid var(--color-primary);
+  padding-left: var(--space-2);
+}
+
+.income .title {
+  border-left: 3px solid var(--color-success);
+  padding-left: var(--space-2);
+}
+
+.danger .title {
+  border-left: 3px solid var(--color-danger);
+  padding-left: var(--space-2);
+}
+
+/* Variant Sheets (Bottom sheet sliding up on mobile) */
+@media (max-width: 600px) {
+  .overlay.sheet {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .content.sheet {
+    max-width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    animation: slideUp var(--duration-normal) var(--ease-out);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}

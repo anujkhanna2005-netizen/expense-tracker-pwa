@@ -150,7 +150,7 @@ const Dashboard: React.FC = () => {
         {/* Income card */}
         <Card variant="flat">
           <span className={styles.cardLabel}>Income This Month</span>
-          <h2 className={styles.cardValue} style={{ color: '#10b981' }}>
+          <h2 className={styles.cardValue} style={{ color: 'var(--color-success)' }}>
             {formatCompactCurrency(totalIncome, settings.currency)}
           </h2>
         </Card>
@@ -160,7 +160,7 @@ const Dashboard: React.FC = () => {
           <span className={styles.cardLabel}>Net Cash Flow</span>
           <h2
             className={styles.cardValue}
-            style={{ color: netCashFlow >= 0 ? '#10b981' : 'var(--color-danger)' }}
+            style={{ color: netCashFlow >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}
           >
             {netCashFlow >= 0 ? '+' : ''}{formatCompactCurrency(netCashFlow, settings.currency)}
           </h2>

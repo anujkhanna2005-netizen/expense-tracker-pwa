@@ -6,6 +6,7 @@
   --color-secondary: #6366F1;
   --color-accent: #F59E0B;
   --color-success: #10B981;
+  --color-success-hover: #059669;
   --color-danger: #EF4444;
   --color-warning: #F59E0B;
 
@@ -22,6 +23,31 @@
 
   /* Borders - Light Mode */
   --border-default: #E2E8F0;
+  --border-color: #E2E8F0;
+
+  /* Spacing Mapping (index.css compatibility) */
+  --spacing-xs: var(--space-1);
+  --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-4);
+  --spacing-lg: var(--space-6);
+  --spacing-xl: var(--space-8);
+
+  /* Elevations */
+  --elevation-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --elevation-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+
+  /* Base color mapping (index.css compatibility) */
+  --bg-primary: var(--surface-1);
+  --bg-secondary: var(--surface-0);
+  --bg-tertiary: var(--surface-2);
+  --text-muted: var(--text-tertiary);
+  --accent-primary: var(--color-primary);
+  --accent-hover: var(--color-primary-hover);
+  --danger: var(--color-danger);
+  --success: var(--color-success);
+  --warning: var(--color-warning);
 
   /* Border Radii */
   --radius-sm: 6px;
@@ -54,6 +80,7 @@
   --color-secondary: #818CF8;
   --color-accent: #FBBF24;
   --color-success: #34D399;
+  --color-success-hover: #059669;
   --color-danger: #F87171;
   --color-warning: #FBBF24;
 
@@ -70,6 +97,24 @@
 
   /* Borders - Dark Mode */
   --border-default: rgba(148, 163, 184, 0.15);
+  --border-color: rgba(255, 255, 255, 0.08);
+
+  /* Elevations - Dark Mode */
+  --elevation-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --elevation-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+
+  /* Base color mapping - Dark Mode */
+  --bg-primary: var(--surface-1);
+  --bg-secondary: var(--surface-0);
+  --bg-tertiary: var(--surface-2);
+  --text-muted: var(--text-tertiary);
+  --accent-primary: var(--color-primary);
+  --accent-hover: var(--color-primary-hover);
+  --danger: var(--color-danger);
+  --success: var(--color-success);
+  --warning: var(--color-warning);
 }
 
 /* Reduced Motion Utility */

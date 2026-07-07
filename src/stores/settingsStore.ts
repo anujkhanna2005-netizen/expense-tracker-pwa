@@ -16,7 +16,7 @@ interface SettingsState {
 
 const defaultSettings: Settings = {
   darkMode: false,
-  currency: '₹',
+  currency: 'INR',
   categoryBudgets: {},
 };
 
@@ -59,6 +59,25 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'settings',
       storage: customPersistStorage,
+      version: 1,
+      migrate: (persistedState: any, _version: number) => {
+        if (persistedState && persistedState.settings) {
+          const currency = persistedState.settings.currency;
+          const symbolToCodeMap: Record<string, string> = {
+            '$': 'USD',
+            '€': 'EUR',
+            '£': 'GBP',
+            '₹': 'INR',
+            '¥': 'JPY',
+            'CA$': 'CAD',
+            'A$': 'AUD'
+          };
+          if (currency && symbolToCodeMap[currency]) {
+            persistedState.settings.currency = symbolToCodeMap[currency];
+          }
+        }
+        return persistedState;
+      }
     }
   )
 );

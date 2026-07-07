@@ -10,6 +10,7 @@ import { useBills } from '../hooks/useBills';
 import { useCategories } from '../hooks/useCategories';
 import { useSettings } from '../hooks/useSettings';
 import { useHydration } from '../hooks/useHydration';
+import type { Bill } from '../types';
 import styles from './Bills.module.css';
 
 const Bills: React.FC = () => {
@@ -43,7 +44,7 @@ const Bills: React.FC = () => {
     }
   };
 
-  const handleEditBill = (bill: any) => {
+  const handleEditBill = (bill: Bill) => {
     setEditingBillId(bill.id);
     setNewBillName(bill.name);
     setNewBillAmount(bill.amount.toString());

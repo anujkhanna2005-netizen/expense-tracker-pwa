@@ -37,7 +37,9 @@ export const storageService = {
     try {
       return await localforage.getItem<T>(key);
     } catch (error) {
-      console.error(`storageService.get error for key "${key}":`, error);
+      if (import.meta.env.DEV) {
+        console.error(`storageService.get error for key "${key}":`, error);
+      }
       throw error;
     }
   },
@@ -46,7 +48,9 @@ export const storageService = {
     try {
       return await localforage.setItem<T>(key, value);
     } catch (error: any) {
-      console.error(`storageService.set error for key "${key}":`, error);
+      if (import.meta.env.DEV) {
+        console.error(`storageService.set error for key "${key}":`, error);
+      }
       if (isQuotaError(error)) {
         throw new StorageQuotaError();
       }
@@ -58,7 +62,9 @@ export const storageService = {
     try {
       await localforage.removeItem(key);
     } catch (error) {
-      console.error(`storageService.remove error for key "${key}":`, error);
+      if (import.meta.env.DEV) {
+        console.error(`storageService.remove error for key "${key}":`, error);
+      }
       throw error;
     }
   },
@@ -67,7 +73,9 @@ export const storageService = {
     try {
       await localforage.clear();
     } catch (error) {
-      console.error('storageService.clear error:', error);
+      if (import.meta.env.DEV) {
+        console.error('storageService.clear error:', error);
+      }
       throw error;
     }
   }

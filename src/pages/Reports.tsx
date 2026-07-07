@@ -195,7 +195,7 @@ const Reports: React.FC = () => {
         </Card>
         <Card variant="flat">
           <span className={styles.statLabel}>Total Income</span>
-          <h2 className={styles.statValue} style={{ color: '#10b981' }}>
+          <h2 className={styles.statValue} style={{ color: 'var(--color-success)' }}>
             {formatCompactCurrency(monthData.totalIncome, settings.currency)}
           </h2>
         </Card>
@@ -203,7 +203,7 @@ const Reports: React.FC = () => {
           <span className={styles.statLabel}>Net Flow</span>
           <h2
             className={styles.statValue}
-            style={{ color: monthData.netCashFlow >= 0 ? '#10b981' : 'var(--color-danger)' }}
+            style={{ color: monthData.netCashFlow >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}
           >
             {monthData.netCashFlow >= 0 ? '+' : ''}
             {formatCompactCurrency(monthData.netCashFlow, settings.currency)}

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, TrendingUp } from 'lucide-react';
 import { INCOME_SOURCES } from '../types/income';
 import { useIncome } from '../hooks/useIncome';
 import { useSettings } from '../hooks/useSettings';
 import { useToast } from '../components/ui/ToastProvider';
+import Modal from './ui/Modal';
 import styles from './AddIncomeModal.module.css';
 
 interface AddIncomeModalProps {
@@ -57,26 +57,9 @@ const AddIncomeModal: React.FC<AddIncomeModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
   return (
-    <div className={styles.backdrop} onClick={handleBackdropClick}>
-      <div className={styles.modal}>
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <div className={styles.headerIcon} aria-hidden="true">
-              <TrendingUp size={20} />
-            </div>
-            <h2>Add Income</h2>
-          </div>
-          <button type="button" onClick={onClose} className={styles.closeBtn} aria-label="Close">
-            <X size={24} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSave} className={styles.form}>
+    <Modal isOpen={isOpen} onClose={onClose} title="Add Income" variant="sheet" accentColor="income">
+      <form onSubmit={handleSave} className={styles.form}>
           {/* Big amount input */}
           <div className={styles.amountInputWrapper}>
             <span className={styles.currencySymbol}>{settings.currency}</span>
@@ -165,8 +148,7 @@ const AddIncomeModal: React.FC<AddIncomeModalProps> = ({ isOpen, onClose }) => {
             Save Income
           </button>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
