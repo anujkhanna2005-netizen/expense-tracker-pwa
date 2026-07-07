@@ -49,13 +49,19 @@ function AppEffects() {
 
 function App() {
   const hydrated = useHydration();
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(() => {
+    return localStorage.getItem('pin_lock_enabled') !== 'true';
+  });
 
   useEffect(() => {
     if (hydrated) {
       const settings = useSettingsStore.getState().settings;
-      if (settings?.pinEnabled && !encryptionService.hasSessionKey()) {
-        setIsUnlocked(false);
+      if (settings?.pinEnabled) {
+        if (encryptionService.hasSessionKey()) {
+          setIsUnlocked(true);
+        } else {
+          setIsUnlocked(false);
+        }
       } else {
         setIsUnlocked(true);
       }

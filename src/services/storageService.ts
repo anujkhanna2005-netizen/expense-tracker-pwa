@@ -52,8 +52,9 @@ export const storageService = {
         return raw as T | null;
       }
 
-      // Check if encryption is enabled synchronously from localStorage
-      const pinEnabled = localStorage.getItem('pin_lock_enabled') === 'true';
+      // Check if encryption is enabled directly from database settings
+      const settingsState = await localforage.getItem<any>('settings');
+      const pinEnabled = settingsState?.state?.settings?.pinEnabled;
 
       if (pinEnabled && typeof raw === 'string' && raw.includes(':')) {
         try {
@@ -91,8 +92,9 @@ export const storageService = {
         return await localforage.setItem<T>(key, value);
       }
 
-      // Check if encryption is enabled synchronously from localStorage
-      const pinEnabled = localStorage.getItem('pin_lock_enabled') === 'true';
+      // Check if encryption is enabled directly from database settings
+      const settingsState = await localforage.getItem<any>('settings');
+      const pinEnabled = settingsState?.state?.settings?.pinEnabled;
 
       if (pinEnabled) {
         if (encryptionService.hasSessionKey()) {
