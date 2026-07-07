@@ -2,8 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { customPersistStorage } from './customStorage';
 import { goalSchema } from '../utils/validation';
-import { useUiStore } from './uiStore';
 import type { Goal } from '../types';
+
+import { createBaseActions } from './createEntityStore';
 
 interface GoalState {
   goals: Goal[];
@@ -14,55 +15,33 @@ interface GoalState {
   resetGoals: () => void;
 }
 
+const actions = createBaseActions<Goal>(goalSchema, 'Invalid goal data');
+
 export const useGoalStore = create<GoalState>()(
   persist(
     (set, get) => ({
       goals: [],
 
       addGoal: (goalData) => {
-        const newGoal: Goal = {
-          ...goalData,
-          id: crypto.randomUUID(),
-          createdAt: new Date().toISOString()
-        };
-        const validation = goalSchema.safeParse(newGoal);
-        if (!validation.success) {
-          const errMsg = validation.error.issues[0]?.message || 'Invalid goal data';
-          useUiStore.getState().addToast(errMsg, 'error');
-          return false;
+        const { success, nextItems } = actions.add(get().goals, goalData);
+        if (success && nextItems) {
+          set({ goals: nextItems });
+          return true;
         }
-
-        set((state) => ({ goals: [...state.goals, newGoal] }));
-        return true;
+        return false;
       },
 
       updateGoal: (id, updates) => {
-        const goals = get().goals;
-        const index = goals.findIndex((g) => g.id === id);
-        if (index === -1) return false;
-
-        const nextGoal = {
-          ...goals[index],
-          ...updates
-        };
-
-        const validation = goalSchema.safeParse(nextGoal);
-        if (!validation.success) {
-          const errMsg = validation.error.issues[0]?.message || 'Invalid goal data';
-          useUiStore.getState().addToast(errMsg, 'error');
-          return false;
+        const { success, nextItems } = actions.update(get().goals, id, updates);
+        if (success && nextItems) {
+          set({ goals: nextItems });
+          return true;
         }
-
-        set((state) => ({
-          goals: state.goals.map((g) => (g.id === id ? nextGoal : g))
-        }));
-        return true;
+        return false;
       },
 
       deleteGoal: (id) => {
-        set((state) => ({
-          goals: state.goals.filter((g) => g.id !== id)
-        }));
+        set({ goals: actions.delete(get().goals, id) });
       },
 
       setGoals: (goals) => set({ goals }),

@@ -22,6 +22,26 @@ export const useExpenseStore = create<ExpenseState>()(
       expenses: [],
 
       addExpense: (expenseData) => {
+        // Check if a matching expense exists for the same date, category, method, and notes to merge
+        if (!('id' in expenseData)) {
+          const matchingIndex = get().expenses.findIndex((e) => {
+            const notesA = (e.notes || '').trim().toLowerCase();
+            const notesB = (expenseData.notes || '').trim().toLowerCase();
+            return (
+              e.date === expenseData.date &&
+              e.categoryId === expenseData.categoryId &&
+              e.paymentMethod === expenseData.paymentMethod &&
+              notesA === notesB
+            );
+          });
+
+          if (matchingIndex !== -1) {
+            const existing = get().expenses[matchingIndex];
+            const updatedAmount = existing.amount + Number(expenseData.amount);
+            return get().updateExpense(existing.id, { amount: updatedAmount });
+          }
+        }
+
         let newExpense: Expense;
         if ('id' in expenseData) {
           newExpense = expenseData as Expense;

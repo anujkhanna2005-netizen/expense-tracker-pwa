@@ -9,7 +9,7 @@ export function useExpenses() {
   const deleteExpense = useExpenseStore((state) => state.deleteExpense);
   const categories = useCategoryStore((state) => state.categories);
 
-  const currentMonth = useMemo(() => new Date().toISOString().slice(0, 7), []);
+  const currentMonth = new Date().toISOString().slice(0, 7);
 
   const thisMonthExpenses = useMemo(() => {
     return expenses.filter((exp) => exp.date.startsWith(currentMonth));

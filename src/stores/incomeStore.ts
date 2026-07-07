@@ -5,6 +5,8 @@ import { incomeSchema } from '../utils/validation';
 import { useUiStore } from './uiStore';
 import type { Income } from '../types/income';
 
+import { createBaseActions } from './createEntityStore';
+
 interface IncomeState {
   incomes: Income[];
   addIncome: (data: Omit<Income, 'id' | 'createdAt' | 'updatedAt'> | Income) => boolean;
@@ -15,61 +17,44 @@ interface IncomeState {
   getByMonth: (monthYear: string) => Income[]; // monthYear = 'YYYY-MM'
 }
 
+const actions = createBaseActions<Income>(incomeSchema, 'Invalid income data');
+
 export const useIncomeStore = create<IncomeState>()(
   persist(
     (set, get) => ({
       incomes: [],
 
       addIncome: (data) => {
-        let newIncome: Income;
         if ('id' in data) {
-          newIncome = data as Income;
-        } else {
-          newIncome = {
-            ...data,
-            id: crypto.randomUUID(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
+          const validation = incomeSchema.safeParse(data);
+          if (!validation.success) {
+            const errMsg = validation.error.issues[0]?.message || 'Invalid income data';
+            useUiStore.getState().addToast(errMsg, 'error');
+            return false;
+          }
+          set((state) => ({ incomes: [data as Income, ...state.incomes] }));
+          return true;
         }
 
-        const validation = incomeSchema.safeParse(newIncome);
-        if (!validation.success) {
-          const errMsg = validation.error.issues[0]?.message || 'Invalid income data';
-          useUiStore.getState().addToast(errMsg, 'error');
-          return false;
+        const { success, nextItems } = actions.add(get().incomes, data);
+        if (success && nextItems) {
+          set({ incomes: nextItems });
+          return true;
         }
-
-        set((state) => ({ incomes: [newIncome, ...state.incomes] }));
-        return true;
+        return false;
       },
 
       updateIncome: (id, updates) => {
-        const incomes = get().incomes;
-        const index = incomes.findIndex((i) => i.id === id);
-        if (index === -1) return false;
-
-        const nextIncome: Income = {
-          ...incomes[index],
-          ...updates,
-          updatedAt: new Date().toISOString(),
-        };
-
-        const validation = incomeSchema.safeParse(nextIncome);
-        if (!validation.success) {
-          const errMsg = validation.error.issues[0]?.message || 'Invalid income data';
-          useUiStore.getState().addToast(errMsg, 'error');
-          return false;
+        const { success, nextItems } = actions.update(get().incomes, id, updates);
+        if (success && nextItems) {
+          set({ incomes: nextItems });
+          return true;
         }
-
-        set((state) => ({
-          incomes: state.incomes.map((i) => (i.id === id ? nextIncome : i)),
-        }));
-        return true;
+        return false;
       },
 
       deleteIncome: (id) => {
-        set((state) => ({ incomes: state.incomes.filter((i) => i.id !== id) }));
+        set({ incomes: actions.delete(get().incomes, id) });
       },
 
       setIncomes: (incomes) => set({ incomes }),

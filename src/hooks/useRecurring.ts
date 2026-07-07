@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useExpenseStore } from '../stores/expenseStore';
 import { useBillStore } from '../stores/billStore';
 import { useUiStore } from '../stores/uiStore';
@@ -12,7 +12,11 @@ import { generateDueRecurringExpenses } from '../services/recurringService';
  * the same day or same period never produces duplicate expenses.
  */
 export function useRecurring() {
+  const hasRun = useRef(false);
+
   useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
     // Read directly from store state (outside React render cycle) so we
     // don't need to subscribe and avoid extra re-renders.
     const bills = useBillStore.getState().bills;

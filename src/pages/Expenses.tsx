@@ -13,6 +13,8 @@ import { useSettings } from '../hooks/useSettings';
 import type { Expense } from '../types';
 import styles from './Expenses.module.css';
 
+import { useVirtualizer } from '@tanstack/react-virtual';
+
 const Expenses: React.FC = () => {
   const { expenses, deleteExpense, addExpense } = useExpenses();
   const { categories } = useCategories();
@@ -26,6 +28,8 @@ const Expenses: React.FC = () => {
   const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const pendingDeleteRef = useRef<{ expense: Expense; timer: ReturnType<typeof setTimeout> } | null>(null);
+  
+  const parentRef = useRef<HTMLDivElement>(null);
 
   const hasActiveFilters = selectedMonth !== 'all' || selectedCategory !== 'all' || sortOrder !== 'newest';
 
@@ -83,6 +87,13 @@ const Expenses: React.FC = () => {
   }, [expenses, categories, searchQuery, selectedMonth, selectedCategory, sortOrder]);
 
   const totalFilteredAmount = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+  const rowVirtualizer = useVirtualizer({
+    count: filteredExpenses.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 85,
+    overscan: 5,
+  });
 
   const handleDeleteConfirm = () => {
     if (!deleteExpenseId) return;
@@ -171,50 +182,75 @@ const Expenses: React.FC = () => {
         </div>
       </div>
 
-      <div className={styles.expenseList}>
+      <div 
+        ref={parentRef} 
+        className={styles.expenseList} 
+        style={{ 
+          maxHeight: '650px', 
+          overflowY: 'auto', 
+          position: 'relative' 
+        }}
+      >
         {filteredExpenses.length > 0 ? (
-          filteredExpenses.map(exp => {
-            const category = categories.find(c => c.id === exp.categoryId);
-            return (
-              <div key={exp.id} className={styles.expenseCard}>
-                <div className={styles.expenseIcon} aria-hidden="true">
-                  {category?.icon || '📦'}
-                </div>
-                
-                <div className={styles.expenseDetails}>
-                  <h3 className={styles.expenseCatName}>{category?.name || 'Unknown'}</h3>
-                  <div className={styles.expenseMeta}>
-                    <span>{new Date(exp.date).toLocaleDateString()}</span>
-                    <span>•</span>
-                    <span>{exp.paymentMethod}</span>
-                  </div>
-                  {exp.notes && <p className={styles.expenseNotes}>{exp.notes}</p>}
-                </div>
+          <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const exp = filteredExpenses[virtualRow.index];
+              const category = categories.find(c => c.id === exp.categoryId);
+              return (
+                <div 
+                  key={exp.id} 
+                  ref={rowVirtualizer.measureElement}
+                  data-index={virtualRow.index}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                    paddingBottom: '12px'
+                  }}
+                >
+                  <div className={styles.expenseCard}>
+                    <div className={styles.expenseIcon} aria-hidden="true">
+                      {category?.icon || '📦'}
+                    </div>
+                    
+                    <div className={styles.expenseDetails}>
+                      <h3 className={styles.expenseCatName}>{category?.name || 'Unknown'}</h3>
+                      <div className={styles.expenseMeta}>
+                        <span>{new Date(exp.date).toLocaleDateString()}</span>
+                        <span>•</span>
+                        <span>{exp.paymentMethod}</span>
+                      </div>
+                      {exp.notes && <p className={styles.expenseNotes}>{exp.notes}</p>}
+                    </div>
 
-                <div className={styles.expenseActions}>
-                  <span className={styles.expenseAmount}>
-                    {formatCurrency(exp.amount, settings.currency)}
-                  </span>
-                  <div className={styles.actionButtons}>
-                    <button 
-                      className={styles.actionBtn} 
-                      aria-label="Edit expense"
-                      onClick={() => setEditExpense(exp)}
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button 
-                      className={`${styles.actionBtn} ${styles.deleteBtn}`} 
-                      aria-label="Delete expense"
-                      onClick={() => setDeleteExpenseId(exp.id)}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className={styles.expenseActions}>
+                      <span className={styles.expenseAmount}>
+                        {formatCurrency(exp.amount, settings.currency)}
+                      </span>
+                      <div className={styles.actionButtons}>
+                        <button 
+                          className={styles.actionBtn} 
+                          aria-label="Edit expense"
+                          onClick={() => setEditExpense(exp)}
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          className={`${styles.actionBtn} ${styles.deleteBtn}`} 
+                          aria-label="Delete expense"
+                          onClick={() => setDeleteExpenseId(exp.id)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         ) : (
           <div className={styles.emptyState}>
             <ReceiptText size={48} className={styles.emptyIcon} />

@@ -1,11 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { formatCurrency, formatCompactCurrency } from '../utils/format';
-import { CheckCircle2, Circle, Calendar, Plus, X, Trash2, Edit2 } from 'lucide-react';
+import { CheckCircle2, Circle, Calendar, Plus, Trash2, Edit2 } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
+import Modal from '../components/ui/Modal';
+import BillForm from '../components/BillForm';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Skeleton from '../components/ui/Skeleton';
-import Select from '../components/ui/Select';
 import { useBills } from '../hooks/useBills';
 import { useCategories } from '../hooks/useCategories';
 import { useSettings } from '../hooks/useSettings';
@@ -14,7 +15,7 @@ import type { Bill } from '../types';
 import styles from './Bills.module.css';
 
 const Bills: React.FC = () => {
-  const { bills, totalBillsAmount, unpaidCount, addBill, updateBill, deleteBill } = useBills();
+  const { bills, totalBillsAmount, unpaidCount, updateBill, deleteBill } = useBills();
   const { categories } = useCategories();
   const { settings } = useSettings();
   const hydrated = useHydration();
@@ -23,19 +24,6 @@ const Bills: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingBillId, setEditingBillId] = useState<string | null>(null);
   const [deleteBillId, setDeleteBillId] = useState<string | null>(null);
-  
-  const [newBillName, setNewBillName] = useState('');
-  const [newBillAmount, setNewBillAmount] = useState('');
-  const [newBillDue, setNewBillDue] = useState('');
-  const [newBillCat, setNewBillCat] = useState('');
-  const [newBillRecurring, setNewBillRecurring] = useState(false);
-  const [newBillFrequency, setNewBillFrequency] = useState<'weekly' | 'monthly'>('monthly');
-
-  React.useEffect(() => {
-    const handleOpen = () => setShowAddForm(true);
-    window.addEventListener('openAddBill', handleOpen);
-    return () => window.removeEventListener('openAddBill', handleOpen);
-  }, []);
 
   const togglePaid = (id: string) => {
     const bill = bills.find(b => b.id === id);
@@ -46,56 +34,8 @@ const Bills: React.FC = () => {
 
   const handleEditBill = (bill: Bill) => {
     setEditingBillId(bill.id);
-    setNewBillName(bill.name);
-    setNewBillAmount(bill.amount.toString());
-    setNewBillDue(bill.dueDate);
-    setNewBillCat(bill.categoryId);
-    setNewBillRecurring(bill.isRecurring ?? false);
-    setNewBillFrequency(bill.recurringFrequency ?? 'monthly');
     setShowAddForm(true);
   };
-
-  const handleAddBill = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBillName || !newBillAmount || !newBillDue || !newBillCat) return;
-    
-    if (editingBillId) {
-      updateBill(editingBillId, {
-        name: newBillName,
-        amount: Number(newBillAmount),
-        dueDate: newBillDue,
-        categoryId: newBillCat,
-        isRecurring: newBillRecurring,
-        recurringFrequency: newBillRecurring ? newBillFrequency : undefined,
-      });
-      setEditingBillId(null);
-    } else {
-      addBill({
-        name: newBillName,
-        amount: Number(newBillAmount),
-        dueDate: newBillDue,
-        isPaid: false,
-        reminderEnabled: false,
-        categoryId: newBillCat,
-        isRecurring: newBillRecurring,
-        recurringFrequency: newBillRecurring ? newBillFrequency : undefined,
-      });
-    }
-    
-    setShowAddForm(false);
-    setNewBillName('');
-    setNewBillAmount('');
-    setNewBillDue('');
-    setNewBillCat('');
-    setNewBillRecurring(false);
-    setNewBillFrequency('monthly');
-  };
-
-  const categoryOptions = useMemo(() => {
-    const options = [{ value: '', label: 'Select Category' }];
-    categories.forEach(cat => options.push({ value: cat.id, label: cat.name }));
-    return options;
-  }, [categories]);
 
   if (isLoading) {
     return (
@@ -123,54 +63,10 @@ const Bills: React.FC = () => {
           <h1 className={styles.title}>Bills & Subscriptions</h1>
           <p className={styles.subtitle}>Track your recurring payments</p>
         </div>
-        {!showAddForm && (
-          <Button variant="primary" size="sm" icon={<Plus size={16} />} onClick={() => setShowAddForm(true)}>
-            Add Bill
-          </Button>
-        )}
+        <Button variant="primary" size="sm" icon={<Plus size={16} />} onClick={() => { setEditingBillId(null); setShowAddForm(true); }}>
+          Add Bill
+        </Button>
       </header>
-
-      {showAddForm && (
-        <form className={styles.addForm} onSubmit={handleAddBill}>
-          <div className={styles.formHeader}>
-            <h3>{editingBillId ? 'Edit Bill' : 'New Bill'}</h3>
-            <button type="button" onClick={() => { setShowAddForm(false); setEditingBillId(null); }} className={styles.closeBtn}><X size={20} /></button>
-          </div>
-          <div className={styles.inputGroup}>
-            <input type="text" placeholder="Bill Name" value={newBillName} onChange={(e) => setNewBillName(e.target.value)} className={styles.input} required />
-            <input type="number" placeholder="Amount" value={newBillAmount} onChange={(e) => setNewBillAmount(e.target.value)} className={styles.input} required min="0.01" step="0.01" />
-            <input type="date" value={newBillDue} onChange={(e) => setNewBillDue(e.target.value)} className={styles.input} required />
-            <Select
-              value={newBillCat}
-              options={categoryOptions}
-              onChange={setNewBillCat}
-            />
-            {/* Recurring toggle */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={newBillRecurring}
-                  onChange={(e) => setNewBillRecurring(e.target.checked)}
-                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent-primary)' }}
-                />
-                <span>Auto-generate expense each period</span>
-              </label>
-              {newBillRecurring && (
-                <Select
-                  value={newBillFrequency}
-                  options={[
-                    { value: 'monthly', label: 'Monthly' },
-                    { value: 'weekly', label: 'Weekly' },
-                  ]}
-                  onChange={(v) => setNewBillFrequency(v as 'weekly' | 'monthly')}
-                />
-              )}
-            </div>
-            <Button type="submit" variant="primary" size="md">Save Bill</Button>
-          </div>
-        </form>
-      )}
 
       <div className={styles.statsGrid}>
         <Card variant="elevated">
@@ -198,70 +94,100 @@ const Bills: React.FC = () => {
               statusObj = { color: 'var(--color-success)', text: '🟢 Paid' };
             } else if (diffDays < 0) {
               statusObj = { color: 'var(--color-danger)', text: '🔴 Overdue' };
+            } else if (diffDays === 0) {
+              statusObj = { color: 'var(--color-warning)', text: '🟠 Due Today' };
             } else if (diffDays <= 3) {
-              statusObj = { color: 'var(--color-warning)', text: '🟡 Due soon' };
-            } else {
-              statusObj = { color: 'var(--text-secondary)', text: '⚪ Upcoming' };
+              statusObj = { color: 'var(--color-warning)', text: `🟠 Due in ${diffDays}d` };
             }
-
+            
             return (
-              <div key={bill.id} className={`${styles.billCard} ${bill.isPaid ? styles.paid : ''}`}>
-                <button 
-                  className={styles.checkBtn} 
-                  aria-label={bill.isPaid ? 'Mark unpaid' : 'Mark paid'}
-                  onClick={() => togglePaid(bill.id)}
-                >
-                  {bill.isPaid ? <CheckCircle2 size={28} className={styles.checkedIcon} /> : <Circle size={28} className={styles.uncheckedIcon} />}
-                </button>
-                
-                <div className={styles.billDetails}>
-                  <h3 className={styles.billName}>
-                    {bill.name}
-                    {bill.isRecurring && (
-                      <span title={`Auto-recurring ${bill.recurringFrequency ?? ''}`} style={{ marginLeft: '6px', fontSize: '13px' }}>🔁</span>
+              <Card key={bill.id} variant="flat" className={`${styles.billCard} ${bill.isPaid ? styles.paidCard : ''}`}>
+                <div className={styles.billMain}>
+                  <button 
+                    type="button" 
+                    className={styles.checkBtn} 
+                    onClick={() => togglePaid(bill.id)}
+                    aria-label={bill.isPaid ? 'Mark as unpaid' : 'Mark as paid'}
+                  >
+                    {bill.isPaid ? (
+                      <CheckCircle2 size={24} className={styles.checked} />
+                    ) : (
+                      <Circle size={24} className={styles.unchecked} />
                     )}
-                  </h3>
-                  <div className={styles.billMeta}>
-                    <span className={styles.billCat}>{cat?.name || 'Bill'}</span>
+                  </button>
+                  
+                  <div className={styles.billDetails}>
+                    <div className={styles.billTitleRow}>
+                      <h3 className={styles.billName}>{bill.name}</h3>
+                      {bill.isRecurring && (
+                        <span className={styles.recurringBadge} title={`Auto-generates ${bill.recurringFrequency} expenses`}>
+                          🔄 {bill.recurringFrequency === 'weekly' ? 'Weekly' : 'Monthly'}
+                        </span>
+                      )}
+                    </div>
+                    <div className={styles.billMeta}>
+                      <span className={styles.billCat}>
+                        {cat?.icon} {cat?.name}
+                      </span>
+                      <span className={styles.billDate} style={{ color: statusObj.color }}>
+                        <Calendar size={14} style={{ marginRight: '4px' }} />
+                        {dueDate.toLocaleDateString()} ({statusObj.text})
+                      </span>
+                    </div>
                   </div>
                 </div>
-
-                <div className={styles.billSchedule}>
-                  <div className={styles.scheduleItem}>
-                    <Calendar size={14} />
-                    <span>Due: {bill.dueDate}</span>
+                
+                <div className={styles.billActions}>
+                  <span className={styles.billAmount}>
+                    {formatCurrency(bill.amount, settings.currency)}
+                  </span>
+                  <div className={styles.actionButtons}>
+                    <button 
+                      type="button" 
+                      onClick={() => handleEditBill(bill)}
+                      className={styles.iconBtn}
+                      aria-label="Edit bill"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setDeleteBillId(bill.id)}
+                      className={`${styles.iconBtn} ${styles.deleteBtn}`}
+                      aria-label="Delete bill"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
-                  <div className={styles.scheduleItem} style={{ color: statusObj.color, fontWeight: 500 }}>
-                    {statusObj.text}
-                  </div>
                 </div>
-
-                <div className={styles.billAmount}>
-                  {formatCurrency(bill.amount, settings.currency)}
-                </div>
-
-                <div className={styles.actionBtns}>
-                  <button onClick={() => handleEditBill(bill)} className={styles.iconBtn} aria-label="Edit bill"><Edit2 size={16} /></button>
-                  <button onClick={() => setDeleteBillId(bill.id)} className={styles.iconBtn} aria-label="Delete bill"><Trash2 size={16} /></button>
-                </div>
-              </div>
+              </Card>
             );
           })
         ) : (
           <div className={styles.emptyState}>
-            <Calendar size={48} className={styles.emptyIcon} />
-            <h3>No bills added</h3>
-            <p>Keep track of recurring payments and due dates.</p>
-            <Button variant="primary" onClick={() => setShowAddForm(true)}>Add Bill</Button>
+            <p>No bills added yet. Start by tracking subscription costs or regular utilities!</p>
           </div>
         )}
       </div>
 
+      <Modal
+        isOpen={showAddForm}
+        onClose={() => { setShowAddForm(false); setEditingBillId(null); }}
+        title={editingBillId ? 'Edit Bill' : 'New Bill'}
+        variant="dialog"
+        accentColor="primary"
+      >
+        <BillForm
+          billId={editingBillId}
+          onClose={() => { setShowAddForm(false); setEditingBillId(null); }}
+        />
+      </Modal>
+
       <ConfirmModal
         isOpen={!!deleteBillId}
         title="Delete Bill"
-        message="Are you sure you want to delete this bill?"
-        confirmText="Delete Bill"
+        message="Are you sure you want to delete this bill? This will stop future recurring expense generation."
+        confirmText="Delete"
         onConfirm={() => {
           if (deleteBillId) {
             deleteBill(deleteBillId);

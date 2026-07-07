@@ -8,7 +8,7 @@ export function useIncome() {
   const updateIncome = useIncomeStore((state) => state.updateIncome);
   const deleteIncome = useIncomeStore((state) => state.deleteIncome);
 
-  const currentMonth = useMemo(() => new Date().toISOString().slice(0, 7), []);
+  const currentMonth = new Date().toISOString().slice(0, 7);
 
   const thisMonthIncomes = useMemo(
     () => incomes.filter((i) => i.date.startsWith(currentMonth)),
