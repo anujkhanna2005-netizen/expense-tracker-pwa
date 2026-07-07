@@ -53,10 +53,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className={styles.layout}>
+      {/* Skip to Content link for accessibility */}
+      <a href="#main-content" className={styles.skipLink}>
+        Skip to main content
+      </a>
+
       {/* Sidebar for Desktop */}
       <aside className={styles.sidebar}>
         <div className={styles.logo}>
-          <span className={styles.logoIcon}>💰</span>
+          <span className={styles.logoIcon} aria-hidden="true">💰</span>
           <h2>Expense Tracker</h2>
         </div>
         
@@ -75,7 +80,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </aside>
 
       {/* Main Content */}
-      <main className={styles.mainContent}>
+      <main id="main-content" className={styles.mainContent}>
         <div className={styles.pageContainer}>
           {children}
         </div>
