@@ -37,13 +37,23 @@ export const storageService = {
   async get<T>(key: string): Promise<T | null> {
     try {
       const raw = await localforage.getItem<any>(key);
+      if (key === 'settings' && raw) {
+        const settingsValue = (raw as any)?.state?.settings;
+        if (settingsValue) {
+          if (settingsValue.pinEnabled) {
+            localStorage.setItem('pin_lock_enabled', 'true');
+          } else {
+            localStorage.removeItem('pin_lock_enabled');
+          }
+        }
+      }
+
       if (!raw || key === 'settings') {
         return raw as T | null;
       }
 
-      // Check if encryption is enabled
-      const settingsState = await localforage.getItem<any>('settings');
-      const pinEnabled = settingsState?.state?.settings?.pinEnabled;
+      // Check if encryption is enabled synchronously from localStorage
+      const pinEnabled = localStorage.getItem('pin_lock_enabled') === 'true';
 
       if (pinEnabled && typeof raw === 'string' && raw.includes(':')) {
         try {
@@ -70,12 +80,19 @@ export const storageService = {
   async set<T>(key: string, value: T): Promise<T> {
     try {
       if (key === 'settings') {
+        const settingsValue = (value as any)?.state?.settings;
+        if (settingsValue) {
+          if (settingsValue.pinEnabled) {
+            localStorage.setItem('pin_lock_enabled', 'true');
+          } else {
+            localStorage.removeItem('pin_lock_enabled');
+          }
+        }
         return await localforage.setItem<T>(key, value);
       }
 
-      // Check if encryption is enabled
-      const settingsState = await localforage.getItem<any>('settings');
-      const pinEnabled = settingsState?.state?.settings?.pinEnabled;
+      // Check if encryption is enabled synchronously from localStorage
+      const pinEnabled = localStorage.getItem('pin_lock_enabled') === 'true';
 
       if (pinEnabled) {
         if (encryptionService.hasSessionKey()) {
