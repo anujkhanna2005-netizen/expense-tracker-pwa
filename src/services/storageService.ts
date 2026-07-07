@@ -77,11 +77,19 @@ export const storageService = {
       const settingsState = await localforage.getItem<any>('settings');
       const pinEnabled = settingsState?.state?.settings?.pinEnabled;
 
-      if (pinEnabled && encryptionService.hasSessionKey()) {
-        const plaintext = JSON.stringify(value);
-        const ciphertext = await encryptionService.encrypt(plaintext);
-        await localforage.setItem<string>(key, ciphertext);
-        return value;
+      if (pinEnabled) {
+        if (encryptionService.hasSessionKey()) {
+          const plaintext = JSON.stringify(value);
+          const ciphertext = await encryptionService.encrypt(plaintext);
+          await localforage.setItem<string>(key, ciphertext);
+          return value;
+        } else {
+          // APP IS LOCKED: Do NOT overwrite the encrypted database with unencrypted / empty state!
+          if (import.meta.env.DEV) {
+            console.warn(`storageService.set skipped for "${key}" because app is locked.`);
+          }
+          return value;
+        }
       }
 
       return await localforage.setItem<T>(key, value);
