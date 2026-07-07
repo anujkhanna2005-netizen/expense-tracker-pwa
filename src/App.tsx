@@ -83,7 +83,11 @@ function App() {
     return false;
   };
 
-  if (hydrated && !isUnlocked) {
+  if (!hydrated) {
+    return <PageSkeleton />;
+  }
+
+  if (!isUnlocked) {
     return (
       <ToastProvider>
         <PinLockScreen onUnlock={handleUnlock} />
