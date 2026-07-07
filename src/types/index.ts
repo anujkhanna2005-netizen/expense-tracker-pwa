@@ -27,6 +27,10 @@ export interface Bill {
   isPaid: boolean;
   reminderEnabled: boolean;
   categoryId: string;
+  /** Whether this bill should auto-generate a matching expense each period */
+  isRecurring?: boolean;
+  /** Frequency for auto-generating expenses — required when isRecurring is true */
+  recurringFrequency?: 'weekly' | 'monthly';
 }
 
 export interface Goal {
@@ -42,4 +46,6 @@ export interface Settings {
   darkMode: boolean;
   currency: string;
   monthlyBudgetLimit?: number;
+  /** Per-category spending limits. Key = categoryId, value = limit amount. 0 or absent = no limit */
+  categoryBudgets?: Record<string, number>;
 }

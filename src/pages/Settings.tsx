@@ -3,6 +3,7 @@ import { Moon, Sun, Download, Upload, RotateCcw, Tags, FileJson, FileText } from
 import ManageCategoriesModal from '../components/ManageCategoriesModal';
 import SetBudgetModal from '../components/SetBudgetModal';
 import ConfirmModal from '../components/ConfirmModal';
+import CategoryBudgetManager from '../components/CategoryBudgetManager';
 import Select from '../components/ui/Select';
 import Toggle from '../components/ui/Toggle';
 import Button from '../components/ui/Button';
@@ -12,13 +13,16 @@ import { useCategories } from '../hooks/useCategories';
 import { useBills } from '../hooks/useBills';
 import { useGoals } from '../hooks/useGoals';
 import { useSettings } from '../hooks/useSettings';
+import { useIncome } from '../hooks/useIncome';
 import { useExpenseStore } from '../stores/expenseStore';
 import { useCategoryStore } from '../stores/categoryStore';
 import { useBillStore } from '../stores/billStore';
 import { useGoalStore } from '../stores/goalStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useIncomeStore } from '../stores/incomeStore';
 import { importDataSchema } from '../utils/validation';
 import { storageService } from '../services/storageService';
+import { notificationService } from '../services/notificationService';
 import styles from './Settings.module.css';
 
 const CURRENCY_OPTIONS = [
@@ -37,7 +41,12 @@ const Settings: React.FC = () => {
   const { bills } = useBills();
   const { goals } = useGoals();
   const { settings, updateSettings } = useSettings();
+  const { incomes } = useIncome();
   const { toast } = useToast();
+
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() => {
+    return 'Notification' in window ? Notification.permission : 'denied';
+  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isManageCatsOpen, setIsManageCatsOpen] = useState(false);
@@ -58,6 +67,7 @@ const Settings: React.FC = () => {
       categories,
       bills,
       goals,
+      incomes,
       settings,
       exportDate: new Date().toISOString()
     };
@@ -75,10 +85,11 @@ const Settings: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    const headers = ['date', 'category', 'amount', 'paymentMethod', 'notes'];
-    const rows = expenses.map(exp => {
+    const expenseHeaders = ['type', 'date', 'category_or_source', 'amount', 'paymentMethod_or_frequency', 'notes'];
+    const expenseRows = expenses.map(exp => {
       const cat = categories.find(c => c.id === exp.categoryId);
       return [
+        'expense',
         exp.date,
         cat?.name || '',
         exp.amount.toString(),
@@ -86,17 +97,26 @@ const Settings: React.FC = () => {
         (exp.notes || '').replace(/,/g, ';').replace(/\n/g, ' ')
       ];
     });
-    const csvContent = [headers, ...rows].map(row => row.map(v => `"${v}"`).join(',')).join('\n');
+    const incomeRows = incomes.map(inc => [
+      'income',
+      inc.date,
+      inc.source,
+      inc.amount.toString(),
+      inc.isRecurring ? (inc.recurringFrequency || '') : '',
+      (inc.notes || '').replace(/,/g, ';').replace(/\n/g, ' ')
+    ]);
+    const allRows = [...expenseRows, ...incomeRows].sort((a, b) => a[1].localeCompare(b[1]));
+    const csvContent = [expenseHeaders, ...allRows].map(row => row.map(v => `"${v}"`).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `expenses-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `transactions-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast(`CSV exported — ${expenses.length} transactions`, 'success');
+    toast(`CSV exported — ${expenses.length} expenses + ${incomes.length} income entries`, 'success');
   };
 
   const handleImportJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,6 +163,7 @@ const Settings: React.FC = () => {
       if (data.categories) useCategoryStore.getState().setCategories(data.categories);
       if (data.bills) useBillStore.getState().setBills(data.bills);
       if (data.goals) useGoalStore.getState().setGoals(data.goals);
+      if (data.incomes) useIncomeStore.getState().setIncomes(data.incomes);
       if (data.settings) useSettingsStore.getState().updateSettings(data.settings);
 
       setShowImportConfirm(false);
@@ -168,9 +189,25 @@ const Settings: React.FC = () => {
     useCategoryStore.getState().resetCategories();
     useBillStore.getState().resetBills();
     useGoalStore.getState().resetGoals();
+    useIncomeStore.getState().resetIncomes();
     useSettingsStore.getState().resetSettings();
 
     toast('All data has been reset.', 'info');
+  };
+
+  const handleRequestNotificationPermission = async () => {
+    const permission = await notificationService.requestPermission();
+    setNotificationPermission(permission);
+    if (permission === 'granted') {
+      toast('Notifications enabled! Reminders will show here.', 'success');
+      // Trigger a test notification
+      new Notification('Reminders Enabled! 📅', {
+        body: 'You will receive local notifications for bills due soon while the app is open.',
+        icon: '/icon-192.png'
+      });
+    } else {
+      toast('Notification permission denied or unavailable.', 'error');
+    }
   };
 
   return (
@@ -252,6 +289,8 @@ const Settings: React.FC = () => {
             {settings.monthlyBudgetLimit ? `${settings.currency} ${settings.monthlyBudgetLimit}` : 'Set Budget'}
           </Button>
         </div>
+
+        <CategoryBudgetManager />
       </div>
 
       <div className={styles.section}>
@@ -308,6 +347,37 @@ const Settings: React.FC = () => {
             Import
           </Button>
         </div>
+      </div>
+
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>Notifications</h2>
+        <div className={styles.settingCard}>
+          <div className={styles.settingInfo}>
+            <div className={styles.settingIconWrapper} aria-hidden="true">
+              <span style={{ fontSize: '18px' }}>🔔</span>
+            </div>
+            <div>
+              <h3 className={styles.settingName}>Bill Reminders</h3>
+              <p className={styles.settingDesc}>
+                {notificationPermission === 'granted'
+                  ? 'Local reminders are enabled'
+                  : 'Get notified of bills due within 3 days'}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant={notificationPermission === 'granted' ? 'secondary' : 'primary'}
+            size="sm"
+            onClick={handleRequestNotificationPermission}
+            disabled={notificationPermission === 'granted'}
+          >
+            {notificationPermission === 'granted' ? 'Enabled' : 'Enable'}
+          </Button>
+        </div>
+        <p className={styles.notificationWarning}>
+          ⚠️ <strong>Note:</strong> Bill reminders only trigger while the PWA is open on your device.
+          There is no backend server, so true offline background push notifications are not supported.
+        </p>
       </div>
 
       <div className={styles.section}>

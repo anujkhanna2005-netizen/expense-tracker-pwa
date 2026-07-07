@@ -27,6 +27,8 @@ const Bills: React.FC = () => {
   const [newBillAmount, setNewBillAmount] = useState('');
   const [newBillDue, setNewBillDue] = useState('');
   const [newBillCat, setNewBillCat] = useState('');
+  const [newBillRecurring, setNewBillRecurring] = useState(false);
+  const [newBillFrequency, setNewBillFrequency] = useState<'weekly' | 'monthly'>('monthly');
 
   React.useEffect(() => {
     const handleOpen = () => setShowAddForm(true);
@@ -47,6 +49,8 @@ const Bills: React.FC = () => {
     setNewBillAmount(bill.amount.toString());
     setNewBillDue(bill.dueDate);
     setNewBillCat(bill.categoryId);
+    setNewBillRecurring(bill.isRecurring ?? false);
+    setNewBillFrequency(bill.recurringFrequency ?? 'monthly');
     setShowAddForm(true);
   };
 
@@ -59,7 +63,9 @@ const Bills: React.FC = () => {
         name: newBillName,
         amount: Number(newBillAmount),
         dueDate: newBillDue,
-        categoryId: newBillCat
+        categoryId: newBillCat,
+        isRecurring: newBillRecurring,
+        recurringFrequency: newBillRecurring ? newBillFrequency : undefined,
       });
       setEditingBillId(null);
     } else {
@@ -69,7 +75,9 @@ const Bills: React.FC = () => {
         dueDate: newBillDue,
         isPaid: false,
         reminderEnabled: false,
-        categoryId: newBillCat
+        categoryId: newBillCat,
+        isRecurring: newBillRecurring,
+        recurringFrequency: newBillRecurring ? newBillFrequency : undefined,
       });
     }
     
@@ -78,6 +86,8 @@ const Bills: React.FC = () => {
     setNewBillAmount('');
     setNewBillDue('');
     setNewBillCat('');
+    setNewBillRecurring(false);
+    setNewBillFrequency('monthly');
   };
 
   const categoryOptions = useMemo(() => {
@@ -134,6 +144,28 @@ const Bills: React.FC = () => {
               options={categoryOptions}
               onChange={setNewBillCat}
             />
+            {/* Recurring toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={newBillRecurring}
+                  onChange={(e) => setNewBillRecurring(e.target.checked)}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent-primary)' }}
+                />
+                <span>Auto-generate expense each period</span>
+              </label>
+              {newBillRecurring && (
+                <Select
+                  value={newBillFrequency}
+                  options={[
+                    { value: 'monthly', label: 'Monthly' },
+                    { value: 'weekly', label: 'Weekly' },
+                  ]}
+                  onChange={(v) => setNewBillFrequency(v as 'weekly' | 'monthly')}
+                />
+              )}
+            </div>
             <Button type="submit" variant="primary" size="md">Save Bill</Button>
           </div>
         </form>
@@ -182,7 +214,12 @@ const Bills: React.FC = () => {
                 </button>
                 
                 <div className={styles.billDetails}>
-                  <h3 className={styles.billName}>{bill.name}</h3>
+                  <h3 className={styles.billName}>
+                    {bill.name}
+                    {bill.isRecurring && (
+                      <span title={`Auto-recurring ${bill.recurringFrequency ?? ''}`} style={{ marginLeft: '6px', fontSize: '13px' }}>🔁</span>
+                    )}
+                  </h3>
                   <div className={styles.billMeta}>
                     <span className={styles.billCat}>{cat?.name || 'Bill'}</span>
                   </div>

@@ -4,6 +4,7 @@ import { customPersistStorage } from './customStorage';
 import { expenseSchema } from '../utils/validation';
 import { useUiStore } from './uiStore';
 import { useSettingsStore } from './settingsStore';
+import { useCategoryStore } from './categoryStore';
 import type { Expense } from '../types';
 
 interface ExpenseState {
@@ -41,6 +42,27 @@ export const useExpenseStore = create<ExpenseState>()(
         }
 
         set((state) => ({ expenses: [newExpense, ...state.expenses] }));
+
+        // Budget check warning logic
+        const currentMonth = newExpense.date.slice(0, 7);
+        const categoryId = newExpense.categoryId;
+        const limit = useSettingsStore.getState().settings.categoryBudgets?.[categoryId] || 0;
+        
+        if (limit > 0) {
+          const categoryExpenses = get().expenses.filter(
+            (e) => e.categoryId === categoryId && e.date.startsWith(currentMonth)
+          );
+          const totalCategorySpent = categoryExpenses.reduce((sum, e) => sum + e.amount, 0);
+          
+          if (totalCategorySpent > limit) {
+            const cat = useCategoryStore.getState().categories.find((c) => c.id === categoryId);
+            const catName = cat?.name || 'Category';
+            useUiStore.getState().addToast(
+              `⚠️ Budget limit exceeded for ${catName}! Spent ${totalCategorySpent} / Limit ${limit}`,
+              'error'
+            );
+          }
+        }
 
         if (useSettingsStore.getState().isFirstLaunch) {
           useSettingsStore.getState().setIsFirstLaunch(false);

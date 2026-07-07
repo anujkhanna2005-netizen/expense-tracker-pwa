@@ -1,20 +1,19 @@
 import React, { useMemo, useState } from 'react';
 import { formatCompactCurrency, formatCurrency } from '../utils/format';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Skeleton from '../components/ui/Skeleton';
 import Input from '../components/ui/Input';
 import EditExpenseModal from '../components/EditExpenseModal';
+import CategoryDonutChart from '../components/CategoryDonutChart';
 import { useExpenses } from '../hooks/useExpenses';
 import { useCategories } from '../hooks/useCategories';
 import { useSettings } from '../hooks/useSettings';
 import { useHydration } from '../hooks/useHydration';
+import { useIncome } from '../hooks/useIncome';
 import type { Expense } from '../types';
 import styles from './Dashboard.module.css';
-
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6b7280'];
 
 const Dashboard: React.FC = () => {
   const { expenses, totalSpent, categoryTotals, topCategory } = useExpenses();
@@ -22,6 +21,9 @@ const Dashboard: React.FC = () => {
   const { settings } = useSettings();
   const hydrated = useHydration();
   const isLoading = !hydrated;
+  const { totalIncome } = useIncome();
+
+  const netCashFlow = totalIncome - totalSpent;
 
   const navigate = useNavigate();
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
@@ -30,15 +32,6 @@ const Dashboard: React.FC = () => {
   const budgetLimit = settings.monthlyBudgetLimit || 0;
   const budgetRemaining = budgetLimit > 0 ? budgetLimit - totalSpent : 0;
   const budgetPercent = budgetLimit > 0 ? Math.min((totalSpent / budgetLimit) * 100, 100) : 0;
-
-  // Chart data
-  const chartData = useMemo(() => {
-    return categoryTotals.map((cat, index) => ({
-      name: cat.name,
-      value: cat.amount,
-      fill: COLORS[index % COLORS.length]
-    }));
-  }, [categoryTotals]);
 
   // Filtered recent transactions
   const filteredTransactions = useMemo(() => {
@@ -67,6 +60,8 @@ const Dashboard: React.FC = () => {
           <Skeleton variant="line" width={220} height={16} style={{ marginTop: '8px' }} />
         </header>
         <section className={styles.snapshot}>
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
           <Skeleton variant="card" />
           <Skeleton variant="card" />
           <Skeleton variant="card" />
@@ -152,6 +147,25 @@ const Dashboard: React.FC = () => {
           )}
         </Card>
 
+        {/* Income card */}
+        <Card variant="flat">
+          <span className={styles.cardLabel}>Income This Month</span>
+          <h2 className={styles.cardValue} style={{ color: '#10b981' }}>
+            {formatCompactCurrency(totalIncome, settings.currency)}
+          </h2>
+        </Card>
+
+        {/* Net Cash Flow card */}
+        <Card variant="flat">
+          <span className={styles.cardLabel}>Net Cash Flow</span>
+          <h2
+            className={styles.cardValue}
+            style={{ color: netCashFlow >= 0 ? '#10b981' : 'var(--color-danger)' }}
+          >
+            {netCashFlow >= 0 ? '+' : ''}{formatCompactCurrency(netCashFlow, settings.currency)}
+          </h2>
+        </Card>
+
         <Card 
           variant={topCategory ? "interactive" : "flat"} 
           onClick={() => topCategory && navigate(`/expenses?categoryId=${topCategory.id}`)}
@@ -174,44 +188,13 @@ const Dashboard: React.FC = () => {
       {/* Main Content Grid */}
       <div className={styles.grid}>
         {/* Chart */}
-        {chartData.length > 0 ? (
+        {categoryTotals.length > 0 ? (
           <Card variant="flat" className={styles.chartCard}>
             <h3 className={styles.sectionTitle}>Where did your money go?</h3>
-            <div className={styles.chartContainer}>
-              <ResponsiveContainer width="100%" height={150}>
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value: any) => [formatCurrency(Number(value), settings.currency), 'Amount']}
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: 'var(--shadow-sm)' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            
-            <div className={styles.chartLegend}>
-              {chartData.slice(0, 4).map((entry, index) => (
-                <div key={index} className={styles.legendItem}>
-                  <div className={styles.legendColor} style={{ backgroundColor: entry.fill }} />
-                  <span className={styles.legendLabel}>{entry.name}</span>
-                </div>
-              ))}
-            </div>
+            <CategoryDonutChart data={categoryTotals} currency={settings.currency} />
             
             {topCategory && (
-              <div className={styles.insight}>
+              <div className={styles.insight} style={{ marginTop: '16px' }}>
                 <p>💡 <strong>Insight:</strong> {topCategory.name} was your biggest expense this month, making up {((topCategory.amount / totalSpent) * 100).toFixed(0)}% of your spending.</p>
               </div>
             )}

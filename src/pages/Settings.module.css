@@ -185,3 +185,11 @@
   }
 }
 .privacyBadge { margin-top: 12px !important; color: var(--accent-primary) !important; font-weight: 500; font-size: 14px; background-color: var(--bg-tertiary); padding: 8px 16px; border-radius: var(--radius-full); display: inline-block; }
+
+.notificationWarning {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: var(--spacing-sm);
+  line-height: 1.4;
+  padding-left: 4px;
+}

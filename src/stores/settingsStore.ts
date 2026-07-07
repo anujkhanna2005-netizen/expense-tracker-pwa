@@ -9,6 +9,7 @@ interface SettingsState {
   settings: Settings;
   isFirstLaunch: boolean;
   updateSettings: (updates: Partial<Settings>) => boolean;
+  updateCategoryBudget: (categoryId: string, limit: number) => boolean;
   setIsFirstLaunch: (val: boolean) => void;
   resetSettings: () => void;
 }
@@ -16,6 +17,7 @@ interface SettingsState {
 const defaultSettings: Settings = {
   darkMode: false,
   currency: '₹',
+  categoryBudgets: {},
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -35,6 +37,19 @@ export const useSettingsStore = create<SettingsState>()(
 
         set({ settings: nextSettings });
         return true;
+      },
+
+      updateCategoryBudget: (categoryId, limit) => {
+        const settings = get().settings;
+        const categoryBudgets = { ...(settings.categoryBudgets || {}) };
+        
+        if (limit <= 0) {
+          delete categoryBudgets[categoryId];
+        } else {
+          categoryBudgets[categoryId] = limit;
+        }
+
+        return get().updateSettings({ categoryBudgets });
       },
 
       setIsFirstLaunch: (val) => set({ isFirstLaunch: val }),
