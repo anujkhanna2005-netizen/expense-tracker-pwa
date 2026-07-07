@@ -92,6 +92,7 @@ export const useCategoryStore = create<CategoryState>()(
     {
       name: 'categories',
       storage: customPersistStorage,
+      partialize: (state) => ({ categories: state.categories }),
     }
   )
 );

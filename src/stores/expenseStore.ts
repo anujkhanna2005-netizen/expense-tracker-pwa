@@ -127,6 +127,7 @@ export const useExpenseStore = create<ExpenseState>()(
     {
       name: 'expenses',
       storage: customPersistStorage,
+      partialize: (state) => ({ expenses: state.expenses }),
     }
   )
 );

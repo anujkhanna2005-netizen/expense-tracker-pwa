@@ -51,6 +51,7 @@ export const useGoalStore = create<GoalState>()(
     {
       name: 'goals',
       storage: customPersistStorage,
+      partialize: (state) => ({ goals: state.goals }),
     }
   )
 );

@@ -71,6 +71,7 @@ export const useBillStore = create<BillState>()(
     {
       name: 'bills',
       storage: customPersistStorage,
+      partialize: (state) => ({ bills: state.bills }),
     }
   )
 );

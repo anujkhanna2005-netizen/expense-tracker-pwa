@@ -68,6 +68,7 @@ export const useIncomeStore = create<IncomeState>()(
     {
       name: 'incomes',
       storage: customPersistStorage,
+      partialize: (state) => ({ incomes: state.incomes }),
     }
   )
 );

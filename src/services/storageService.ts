@@ -1,5 +1,6 @@
 import localforage from 'localforage';
 import { encryptionService } from './encryptionService';
+import { useUiStore } from '../stores/uiStore';
 
 // Explicitly configure localforage to guarantee clean initialization
 localforage.config({
@@ -116,6 +117,9 @@ export const storageService = {
       if (import.meta.env.DEV) {
         console.error(`storageService.set error for key "${key}":`, error);
       }
+      try {
+        useUiStore.getState().addToast('Failed to save data — please try again', 'error');
+      } catch (uiErr) {}
       if (isQuotaError(error)) {
         throw new StorageQuotaError();
       }
