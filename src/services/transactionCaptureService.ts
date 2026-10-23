@@ -25,11 +25,19 @@ function inferPaymentMethod(packageName: string, description: string): Expense['
   if (/\bimps\b/.test(combined)) return 'Bank Transfer';
   if (/\brtgs\b/.test(combined)) return 'Bank Transfer';
   if (/\bupi\b/.test(combined)) return 'UPI';
+  if (/\bcredit\s*card\b/.test(combined)) return 'Credit Card';
+  if (/\bdebit\s*card\b/.test(combined)) return 'Debit Card';
+  if (/\bcard\b/.test(combined)) return 'Credit Card';
   // UPI app packages
   const upiPackages = [
     'com.phonepe.app', 'com.google.android.apps.nbu.paisa.user',
     'net.one97.paytm', 'com.lcode.bhimupi', 'in.bhimupi',
     'in.org.npci.upiapp', 'com.whatsapp',
+    'com.dreamplug.androidapp', 'com.hdfcbank.payzapp',
+    'com.enstage.wibmo.hdfc', 'money.jupiter', 'money.fi',
+    'indwin.c3.shareapp', 'org.isometrik.mslice', 'com.naviapp',
+    'money.super', 'com.samsung.android.spay', 'com.tatadigital.tcp',
+    'com.amazonpay', 'in.amazon.mShop.android.shopping',
   ];
   if (upiPackages.includes(packageName)) return 'UPI';
   return 'Bank Transfer';
