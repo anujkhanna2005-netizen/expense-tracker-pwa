@@ -3,23 +3,32 @@ import { formatCurrency } from '../../utils/format';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import EditExpenseModal from '../../components/EditExpenseModal';
-import type { Expense, Category, Settings } from '../../types';
+import type { Expense, Settings } from '../../types';
 import styles from '../Dashboard.module.css';
 
+export interface DashboardTransactionItem {
+  kind: 'expense' | 'income';
+  id: string;
+  date: string;
+  amount: number;
+  title: string;
+  subtitle: string;
+  icon: string;
+  raw?: Expense;
+}
+
 interface RecentTransactionsProps {
-  filteredTransactions: Expense[];
-  categories: Category[];
+  transactions: DashboardTransactionItem[];
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   settings: Settings;
 }
 
 export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
-  filteredTransactions,
-  categories,
+  transactions,
   searchQuery,
   setSearchQuery,
-  settings
+  settings,
 }) => {
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
 
@@ -29,30 +38,41 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
         <div className={styles.sectionHeader} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
           <h3 className={styles.sectionTitle} style={{ margin: 0 }}>Recent Transactions</h3>
           <Input
-            placeholder="Search recent notes or categories..."
+            placeholder="Search recent notes, merchants, or categories..."
             value={searchQuery}
             onChange={setSearchQuery}
           />
         </div>
         
         <div className={styles.transactionList}>
-          {filteredTransactions.length > 0 ? (
-            filteredTransactions.map(exp => {
-              const cat = categories.find(c => c.id === exp.categoryId);
+          {transactions.length > 0 ? (
+            transactions.map((txn) => {
+              const isIncome = txn.kind === 'income';
               return (
                 <div 
-                  key={exp.id} 
+                  key={`${txn.kind}-${txn.id}`} 
                   className={styles.transaction} 
-                  onClick={() => setEditExpense(exp)}
-                  style={{ cursor: 'pointer' }}
+                  onClick={() => { if (txn.raw) setEditExpense(txn.raw); }}
+                  style={{ cursor: txn.raw ? 'pointer' : 'default' }}
                 >
-                  <div className={styles.txnIcon}>{cat?.icon || '📦'}</div>
-                  <div className={styles.txnDetails}>
-                    <span className={styles.txnCat}>{cat?.name || 'Unknown'}</span>
-                    <span className={styles.txnDate}>{new Date(exp.date).toLocaleDateString()}</span>
+                  <div className={styles.txnIcon}>{txn.icon}</div>
+                  <div className={styles.txnDetails} style={{ flex: 1, minWidth: 0 }}>
+                    <span className={styles.txnCat} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {txn.title}
+                    </span>
+                    <span className={styles.txnDate}>
+                      {new Date(txn.date).toLocaleDateString()} • {txn.subtitle}
+                    </span>
                   </div>
-                  <div className={styles.txnAmount}>
-                    -{formatCurrency(exp.amount, settings.currency)}
+                  <div
+                    className={styles.txnAmount}
+                    style={{
+                      color: isIncome ? '#10b981' : undefined,
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {isIncome ? '+' : '-'}{formatCurrency(txn.amount, settings.currency)}
                   </div>
                 </div>
               );

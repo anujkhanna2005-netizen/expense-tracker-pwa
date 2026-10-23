@@ -93,6 +93,8 @@ public class TransactionCaptureService extends NotificationListenerService {
         "com.unionbankofindia.mobile",
         "com.pnb.mobile",
         "com.yesbank",
+        // Email apps delivering bank/Slice debit/credit alerts
+        "com.google.android.gm",
         // SMS apps delivering bank debit/credit alerts
         "com.google.android.apps.messaging",
         "com.samsung.android.messaging",
@@ -101,6 +103,10 @@ public class TransactionCaptureService extends NotificationListenerService {
         "com.coloros.mms",
         "com.oneplus.mms",
         "com.vivo.mms"
+    ));
+
+    private static final Set<String> EMAIL_PACKAGES = new HashSet<>(Arrays.asList(
+        "com.google.android.gm"
     ));
 
     private static final Set<String> SMS_PACKAGES = new HashSet<>(Arrays.asList(
@@ -117,7 +123,7 @@ public class TransactionCaptureService extends NotificationListenerService {
     public void onNotificationPosted(StatusBarNotification sbn) {
         if (sbn == null) return;
         if (getPackageName().equals(sbn.getPackageName())) return;
-        // Only process notifications from known banking/UPI/SMS apps
+        // Only process notifications from known banking/UPI/SMS/Email apps
         if (!ALLOWED_PACKAGES.contains(sbn.getPackageName())) return;
 
         Notification notification = sbn.getNotification();
@@ -139,6 +145,13 @@ public class TransactionCaptureService extends NotificationListenerService {
             boolean isBankSms = title.matches("(?i).*(?:bank|hdfc|sbi|icici|axis|kotak|pnb|bob|idfc|canara|indus|rbl|yesb|fed|paytm|upi).*")
                 || lower.matches("(?s).*(?:\\ba\\/c\\b|\\bacct\\b|account|vpa|card ending|credit card|debit card|upi ref|transaction id|txn id).*");
             if (!isBankSms) return;
+        }
+
+        // If received from Gmail, strictly verify it is a bank / Slice transaction email
+        if (EMAIL_PACKAGES.contains(sbn.getPackageName())) {
+            boolean isBankEmail = title.matches("(?i).*(?:slice|bank|hdfc|sbi|icici|axis|kotak|pnb|bob|idfc|canara|indus|rbl|yesb|fed|paytm|cred|upi|amazon\\s*pay).*")
+                || lower.matches("(?s).*(?:debited from|credited to|spent on|account xx|a\\/c xx|received .* in your).*");
+            if (!isBankEmail) return;
         }
 
         // Ignore very short messages (likely OTPs, PINs or greetings)

@@ -72,10 +72,14 @@ function AppEffects() {
       }
     };
     void syncTransactions();
+    const timer = setInterval(syncTransactions, 3000);
     const listener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
       if (isActive) void syncTransactions();
     });
-    return () => { void listener.then((handle) => handle.remove()); };
+    return () => {
+      void listener.then((handle) => handle.remove());
+      clearInterval(timer);
+    };
   }, []);
 
   return null;
