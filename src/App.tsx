@@ -45,6 +45,23 @@ function AppEffects() {
     // Run bill reminders check on app load/mount
     const bills = useBillStore.getState().bills;
     notificationService.checkAndNotifyDueBills(bills);
+
+    // Reconcile any test transactions imported with 2024 dates when running on 2026 system clock
+    const currentYear = new Date().getFullYear().toString();
+    if (currentYear === '2026') {
+      const expStore = useExpenseStore.getState();
+      if (expStore.expenses.some((e) => e.date.startsWith('2024-'))) {
+        expStore.setExpenses(
+          expStore.expenses.map((e) => (e.date.startsWith('2024-') ? { ...e, date: e.date.replace('2024-', '2026-') } : e))
+        );
+      }
+      const incStore = useIncomeStore.getState();
+      if (incStore.incomes.some((i) => i.date.startsWith('2024-'))) {
+        incStore.setIncomes(
+          incStore.incomes.map((i) => (i.date.startsWith('2024-') ? { ...i, date: i.date.replace('2024-', '2026-') } : i))
+        );
+      }
+    }
   }, []);
 
   useEffect(() => {

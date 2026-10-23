@@ -26,9 +26,14 @@ public class TransactionCapturePlugin extends Plugin {
     @PluginMethod public void drainTransactions(PluginCall call) {
         android.content.SharedPreferences prefs = getContext().getSharedPreferences("transaction_capture", android.content.Context.MODE_PRIVATE);
         try {
-            JSONArray records = new JSONArray(prefs.getString("pending", "[]"));
+            String pendingStr = prefs.getString("pending", "[]");
+            JSArray array = new JSArray(pendingStr);
+            JSObject result = new JSObject();
+            result.put("transactions", array);
             prefs.edit().putString("pending", "[]").apply();
-            JSObject result = new JSObject(); result.put("transactions", JSArray.from(records)); call.resolve(result);
-        } catch (Exception e) { call.reject("Could not read locally queued transactions", e); }
+            call.resolve(result);
+        } catch (Exception e) {
+            call.reject("Could not read locally queued transactions: " + e.getMessage(), e);
+        }
     }
 }

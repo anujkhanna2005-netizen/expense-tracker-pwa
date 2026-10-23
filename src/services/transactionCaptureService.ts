@@ -61,13 +61,20 @@ export const transactionCaptureService = {
   ): Promise<ImportResult> {
     if (Capacitor.getPlatform() !== 'android') return { expenses: 0, incomes: 0 };
     const { transactions } = await TransactionCapture.drainTransactions();
-    if (transactions.length === 0) return { expenses: 0, incomes: 0 };
+    const list = Array.isArray(transactions) ? transactions : [];
+    if (list.length === 0) return { expenses: 0, incomes: 0 };
     const { suggestCategory } = await import('./statementImportService');
     let expenses = 0;
     let incomes = 0;
-    for (const transaction of transactions) {
+    for (const transaction of list) {
       const description = `${transaction.title} ${transaction.text}`.replace(/\s+/g, ' ').trim().slice(0, 240);
-      const date = new Date(transaction.timestamp).toISOString().slice(0, 10);
+      const rawTs = Number(transaction.timestamp) || 0;
+      const ts = rawTs > 0 ? (rawTs < 1e11 ? rawTs * 1000 : rawTs) : Date.now();
+      const d = new Date(ts);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const date = `${year}-${month}-${day}`;
 
       if (transaction.type === 'income') {
         if (transaction.amount > 0 && addIncome) {

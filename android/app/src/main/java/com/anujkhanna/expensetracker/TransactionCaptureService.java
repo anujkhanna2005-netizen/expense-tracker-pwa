@@ -142,8 +142,8 @@ public class TransactionCaptureService extends NotificationListenerService {
 
         // If received from an SMS app, strictly verify it is a bank / UPI alert
         if (SMS_PACKAGES.contains(sbn.getPackageName())) {
-            boolean isBankSms = title.matches("(?i).*(?:bank|hdfc|sbi|icici|axis|kotak|pnb|bob|idfc|canara|indus|rbl|yesb|fed|paytm|upi).*")
-                || lower.matches("(?s).*(?:\\ba\\/c\\b|\\bacct\\b|account|vpa|card ending|credit card|debit card|upi ref|transaction id|txn id).*");
+            boolean isBankSms = title.matches("(?i).*(?:bank|hdfc|sbi|icici|axis|kotak|pnb|bob|idfc|canara|indus|rbl|yesb|fed|paytm|upi|slice).*")
+                || lower.matches("(?s).*(?:\\ba\\/c\\b|\\bacct\\b|account|vpa|card ending|credit card|debit card|upi ref|transaction id|txn id|slice).*");
             if (!isBankSms) return;
         }
 
@@ -246,7 +246,7 @@ public class TransactionCaptureService extends NotificationListenerService {
             record.put("text",        body);
             record.put("amount",      amount);
             record.put("type",        txnType);
-            record.put("timestamp",   sbn.getPostTime());
+            record.put("timestamp",   sbn.getPostTime() > 0 ? sbn.getPostTime() : System.currentTimeMillis());
             queue.put(record);
 
             // Trim queue to MAX_QUEUE (keep newest entries)

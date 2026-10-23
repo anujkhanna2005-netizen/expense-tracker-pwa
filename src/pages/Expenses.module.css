@@ -57,6 +57,38 @@
   border: 1px solid var(--border-color);
 }
 
+.typeTabs {
+  display: flex;
+  gap: 6px;
+  background-color: var(--bg-tertiary);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  width: fit-content;
+}
+
+.typeTabBtn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.typeTabBtn:hover {
+  color: var(--text-primary);
+}
+
+.typeTabBtnActive {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+}
+
 .searchBox {
   position: relative;
   width: 100%;
