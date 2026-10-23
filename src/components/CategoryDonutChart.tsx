@@ -36,7 +36,7 @@ const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({ data, currency 
   return (
     <div className={styles.container}>
       <div className={styles.chartContainer}>
-        <ResponsiveContainer width="100%" height={180}>
+        <ResponsiveContainer width="99%" height={180}>
           <PieChart>
             <Pie
               data={chartData}

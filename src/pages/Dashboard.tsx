@@ -19,7 +19,7 @@ const Dashboard: React.FC = () => {
   const { settings } = useSettings();
   const hydrated = useHydration();
   const isLoading = !hydrated;
-  const { totalIncome } = useIncome();
+  const { totalIncome, incomes } = useIncome();
 
   const netCashFlow = totalIncome - totalSpent;
 
@@ -30,22 +30,42 @@ const Dashboard: React.FC = () => {
   const budgetRemaining = budgetLimit > 0 ? budgetLimit - totalSpent : 0;
   const budgetPercent = budgetLimit > 0 ? Math.min((totalSpent / budgetLimit) * 100, 100) : 0;
 
-  // Filtered recent transactions
-  const filteredTransactions = useMemo(() => {
-    const sorted = [...expenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  // Filtered recent transactions (combining expenses and incomes)
+  const combinedTransactions = useMemo(() => {
+    const list = [
+      ...expenses.map((exp) => {
+        const cat = categories.find((c) => c.id === exp.categoryId);
+        return {
+          kind: 'expense' as const,
+          id: exp.id,
+          date: exp.date,
+          amount: exp.amount,
+          title: exp.notes || cat?.name || 'Expense',
+          subtitle: cat?.name || 'Expense',
+          icon: cat?.icon || '📦',
+          raw: exp,
+        };
+      }),
+      ...incomes.map((inc) => ({
+        kind: 'income' as const,
+        id: inc.id,
+        date: inc.date,
+        amount: inc.amount,
+        title: inc.notes || inc.source || 'Income',
+        subtitle: inc.source || 'Income',
+        icon: '💰',
+      })),
+    ];
+
+    const sorted = list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     if (!searchQuery.trim()) {
-      return sorted.slice(0, 5);
+      return sorted.slice(0, 6);
     }
     const searchLower = searchQuery.toLowerCase();
     return sorted
-      .filter(exp => {
-        const cat = categories.find(c => c.id === exp.categoryId);
-        const matchNote = exp.notes?.toLowerCase().includes(searchLower) || false;
-        const matchCat = cat?.name.toLowerCase().includes(searchLower) || false;
-        return matchNote || matchCat;
-      })
-      .slice(0, 5);
-  }, [expenses, categories, searchQuery]);
+      .filter((t) => t.title.toLowerCase().includes(searchLower) || t.subtitle.toLowerCase().includes(searchLower))
+      .slice(0, 6);
+  }, [expenses, incomes, categories, searchQuery]);
 
   const currentMonthName = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
 
@@ -71,7 +91,7 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  if (expenses.length === 0) {
+  if (expenses.length === 0 && incomes.length === 0) {
     return (
       <div className={styles.dashboard}>
         <div className={styles.emptyWelcomeState}>
@@ -131,8 +151,7 @@ const Dashboard: React.FC = () => {
 
         {/* Recent Transactions */}
         <RecentTransactions
-          filteredTransactions={filteredTransactions}
-          categories={categories}
+          transactions={combinedTransactions}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           settings={settings}

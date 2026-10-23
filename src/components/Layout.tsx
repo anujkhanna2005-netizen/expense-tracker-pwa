@@ -148,7 +148,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             to={item.path}
             className={({ isActive }) => `${styles.bottomNavItem} ${isActive ? styles.active : ''}`}
           >
-            <item.icon size={24} />
+            <item.icon size={20} />
             <span className={styles.bottomNavLabel}>{item.label}</span>
           </NavLink>
         ))}

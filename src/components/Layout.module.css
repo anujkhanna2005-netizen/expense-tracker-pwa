@@ -90,14 +90,21 @@
   margin-left: 250px;
   background-color: var(--bg-primary);
   min-height: 100vh;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .pageContainer {
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  padding: var(--spacing-xl) var(--spacing-md);
-  padding-bottom: 100px; /* Space for FAB/Bottom Nav */
+  padding: var(--spacing-md);
+  padding-bottom: 130px; /* Space for FAB/Bottom Nav */
+  box-sizing: border-box;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 /* Floating Action Button */
@@ -195,19 +202,23 @@
   right: 0;
   background-color: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
-  padding: var(--spacing-xs) 0;
+  padding: 6px 2px calc(6px + env(safe-area-inset-bottom, 0px));
   z-index: 50;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .bottomNavItem {
-  flex: 1;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
   color: var(--text-muted);
+  min-width: 0;
+  padding: 4px 1px;
+  text-decoration: none;
 }
 
 .bottomNavItem.active {
@@ -215,8 +226,15 @@
 }
 
 .bottomNavLabel {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
 }
 
 /* Responsive Overrides */
@@ -227,6 +245,8 @@
   
   .mainContent {
     margin-left: 0;
+    min-width: 0;
+    width: 100%;
   }
   
   .bottomNav {
@@ -234,10 +254,16 @@
   }
   
   .fabWrapper {
-    bottom: 80px; /* Above bottom nav */
+    bottom: 74px; /* Above bottom nav */
+    right: 16px;
+  }
+
+  .fab {
+    width: 50px;
+    height: 50px;
   }
   
   .pageContainer {
-    padding-top: var(--spacing-lg);
+    padding: calc(16px + env(safe-area-inset-top, 28px)) 14px 130px;
   }
 }

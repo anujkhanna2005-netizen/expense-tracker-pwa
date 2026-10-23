@@ -93,6 +93,7 @@ export const StatCards: React.FC<StatCardsProps> = ({
       <Card 
         variant={topCategory ? "interactive" : "flat"} 
         onClick={() => topCategory && navigate(`/expenses?categoryId=${topCategory.id}`)}
+        className={styles.biggestExpenseCard}
       >
         <span className={styles.cardLabel}>Biggest Expense</span>
         {topCategory ? (

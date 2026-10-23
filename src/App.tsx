@@ -45,6 +45,23 @@ function AppEffects() {
     // Run bill reminders check on app load/mount
     const bills = useBillStore.getState().bills;
     notificationService.checkAndNotifyDueBills(bills);
+
+    // Reconcile any test transactions imported with 2024 dates when running on 2026 system clock
+    const currentYear = new Date().getFullYear().toString();
+    if (currentYear === '2026') {
+      const expStore = useExpenseStore.getState();
+      if (expStore.expenses.some((e) => e.date.startsWith('2024-'))) {
+        expStore.setExpenses(
+          expStore.expenses.map((e) => (e.date.startsWith('2024-') ? { ...e, date: e.date.replace('2024-', '2026-') } : e))
+        );
+      }
+      const incStore = useIncomeStore.getState();
+      if (incStore.incomes.some((i) => i.date.startsWith('2024-'))) {
+        incStore.setIncomes(
+          incStore.incomes.map((i) => (i.date.startsWith('2024-') ? { ...i, date: i.date.replace('2024-', '2026-') } : i))
+        );
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -53,11 +70,18 @@ function AppEffects() {
       if (syncing || !transactionCaptureService.isNative()) return;
       syncing = true;
       try {
-        const count = await transactionCaptureService.importPending(
+        const { expenses, incomes } = await transactionCaptureService.importPending(
           useCategoryStore.getState().categories,
           useExpenseStore.getState().addExpense,
+          useIncomeStore.getState().addIncome,
         );
-        if (count) useUiStore.getState().addToast(`${count} payment${count === 1 ? '' : 's'} added from notifications`, 'success');
+        if (expenses > 0 && incomes > 0) {
+          useUiStore.getState().addToast(`${expenses} expense${expenses === 1 ? '' : 's'} & ${incomes} income${incomes === 1 ? '' : 's'} added from notifications`, 'success');
+        } else if (expenses > 0) {
+          useUiStore.getState().addToast(`${expenses} payment${expenses === 1 ? '' : 's'} added from notifications`, 'success');
+        } else if (incomes > 0) {
+          useUiStore.getState().addToast(`${incomes} incoming payment${incomes === 1 ? '' : 's'} added to income`, 'success');
+        }
       } catch (error) {
         if (import.meta.env.DEV) console.error('Could not import captured notifications', error);
       } finally {
@@ -65,10 +89,14 @@ function AppEffects() {
       }
     };
     void syncTransactions();
+    const timer = setInterval(syncTransactions, 3000);
     const listener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
       if (isActive) void syncTransactions();
     });
-    return () => { void listener.then((handle) => handle.remove()); };
+    return () => {
+      void listener.then((handle) => handle.remove());
+      clearInterval(timer);
+    };
   }, []);
 
   return null;
