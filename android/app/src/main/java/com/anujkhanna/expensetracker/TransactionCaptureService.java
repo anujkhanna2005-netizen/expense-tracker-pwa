@@ -71,10 +71,14 @@ public class TransactionCaptureService extends NotificationListenerService {
         "com.myairtelapp",                           // Airtel Thanks
         "com.naviapp",                               // Navi
         "money.super",                               // Super.money
+        "money.super.payments",
         "org.altruist.BajajExperia",                 // Bajaj Finserv
+        "com.nextbillion.groww",                     // Groww
+        "in.indwealth",                              // INDmoney
         // Major Indian bank apps
         "com.snapwork.hdfc",
         "com.hdfc.mobilebanking",
+        "com.hdfcbank.android.now",
         "com.csam.icici.bank.imobile",
         "com.sbi.SBIFreedomPlus",
         "com.sbi.lotusintouch",
@@ -89,7 +93,7 @@ public class TransactionCaptureService extends NotificationListenerService {
         "com.unionbankofindia.mobile",
         "com.pnb.mobile",
         "com.yesbank",
-        // SMS apps delivering bank debit alerts
+        // SMS apps delivering bank debit/credit alerts
         "com.google.android.apps.messaging",
         "com.samsung.android.messaging",
         "com.android.mms",
@@ -130,7 +134,7 @@ public class TransactionCaptureService extends NotificationListenerService {
         String combined = title + " " + body;
         String lower    = combined.toLowerCase();
 
-        // If received from an SMS app, strictly verify it is a bank / UPI debit alert
+        // If received from an SMS app, strictly verify it is a bank / UPI alert
         if (SMS_PACKAGES.contains(sbn.getPackageName())) {
             boolean isBankSms = title.matches("(?i).*(?:bank|hdfc|sbi|icici|axis|kotak|pnb|bob|idfc|canara|indus|rbl|yesb|fed|paytm|upi).*")
                 || lower.matches("(?s).*(?:\\ba\\/c\\b|\\bacct\\b|account|vpa|card ending|credit card|debit card|upi ref|transaction id|txn id).*");
@@ -140,45 +144,55 @@ public class TransactionCaptureService extends NotificationListenerService {
         // Ignore very short messages (likely OTPs, PINs or greetings)
         if (body.trim().length() < 15) return;
 
-        // ── Must contain a debit-indicating keyword ───────────────────────────
-        if (!lower.matches("(?s).*(\\bupi\\b|debited|\\bdebit\\b|\\bpaid\\b|\\bsent\\b|\\bspent\\b|\\bwithdrawn\\b|\\bcharged\\b|payment successful|txn successful|transaction successful|money sent|transfer successful|transferred).*")) {
+        // ── Determine transaction type: expense vs income ─────────────────────
+        boolean isCredit = lower.matches("(?s).*(\\bcredited\\b|credit received|received|you've got|you have got|money received|payment received|added to your|deposited).*");
+        boolean isDebit  = lower.matches("(?s).*(\\bdebited\\b|\\bdebit\\b|\\bpaid\\b|\\bsent\\b|\\bspent\\b|\\bwithdrawn\\b|\\bcharged\\b|payment successful|txn successful|transaction successful|money sent|transfer successful|transferred).*");
+
+        if (!isCredit && !isDebit) {
+            if (lower.contains("upi")) {
+                isDebit = true;
+            } else {
+                return;
+            }
+        }
+
+        // Received money from someone is income; otherwise debit is expense
+        String txnType = (isCredit && !isDebit) || lower.matches("(?s).*(?:received|you've got|you have got|credited).*from.*") ? "income" : "expense";
+
+        // ── Exclusion filter: failed, OTPs, login, promos ─────────────────────
+        if (lower.matches("(?s).*(\\bfailed\\b|\\bdeclined\\b|\\bpending\\b|\\botp\\b|one.time.password|login|verification|special offer|congratulation).*")) {
             return;
         }
 
-        // ── Exclusion filter: credits, reversals, OTPs, failed, promos ───────
-        if (lower.matches("(?s).*(\\bcredited\\b|credit received|received from|money received|\\brefund\\b|reversed|reversal|\\bfailed\\b|\\bdeclined\\b|\\bpending\\b|\\botp\\b|one.time.password|cashback|\\breward\\b|loyalty|special offer|congratulation).*")) {
-            return;
-        }
-
-        // ── Remove trailing remaining balance phrases to avoid extracting balance instead of debit ──
+        // ── Remove trailing remaining balance phrases to avoid extracting balance instead of debit/credit ──
         String textWithoutBal = combined.replaceAll("(?i)(?:avl\\.?\\s*bal(?:ance)?|avail(?:able)?\\s*bal(?:ance)?|a\\/c\\s*bal(?:ance)?|account\\s*balance|bal(?:ance)?\\s*:|avail(?:able)?\\s*limit).*$", "");
 
         // ── Amount extraction ─────────────────────────────────────────────────
         double amount = -1;
 
-        // 1. Explicit debit action followed by amount: "debited by Rs 500", "paid ₹250", "spent INR 1,200"
-        java.util.regex.Pattern debitAfterPattern = java.util.regex.Pattern.compile(
-            "(?i)(?:debited(?:\\s+(?:by|for|with|of))?|paid(?:\\s+to)?|spent|sent|transferred|withdrawn|charged|payment\\s+of|amount\\s+of)\\s*[:\\-]?\\s*(?:rs\\.?|₹|inr)?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)"
+        // 1. Explicit action followed by amount: "debited by Rs 500", "paid ₹250", "spent INR 1,200", "got ₹280", "received ₹500"
+        java.util.regex.Pattern actionAfterPattern = java.util.regex.Pattern.compile(
+            "(?i)(?:debited(?:\\s+(?:by|for|with|of))?|paid(?:\\s+to)?|spent|sent|transferred|withdrawn|charged|received|got|credited(?:\\s+with)?|payment\\s+of|amount\\s+of)\\s*[:\\-]?\\s*(?:rs\\.?|₹|inr)?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)"
         );
-        java.util.regex.Matcher m1 = debitAfterPattern.matcher(textWithoutBal);
+        java.util.regex.Matcher m1 = actionAfterPattern.matcher(textWithoutBal);
         if (m1.find()) {
             try { amount = Double.parseDouble(m1.group(1).replace(",", "")); }
             catch (NumberFormatException ignored) {}
         }
 
-        // 2. Amount followed by debit action: "Rs. 450 debited", "₹1,200 paid", "INR 300 transferred"
+        // 2. Amount followed by action: "Rs. 450 debited", "₹1,200 paid", "₹280 received"
         if (amount < 0) {
-            java.util.regex.Pattern debitBeforePattern = java.util.regex.Pattern.compile(
-                "(?i)(?:rs\\.?|₹|inr)\\s*[:\\-]?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)\\s*(?:is|has been)?\\s*(?:debited|paid|spent|sent|transferred|withdrawn|charged)"
+            java.util.regex.Pattern actionBeforePattern = java.util.regex.Pattern.compile(
+                "(?i)(?:rs\\.?|₹|inr)\\s*[:\\-]?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)\\s*(?:is|has been)?\\s*(?:debited|paid|spent|sent|transferred|withdrawn|charged|received|credited)"
             );
-            java.util.regex.Matcher m2 = debitBeforePattern.matcher(textWithoutBal);
+            java.util.regex.Matcher m2 = actionBeforePattern.matcher(textWithoutBal);
             if (m2.find()) {
                 try { amount = Double.parseDouble(m2.group(1).replace(",", "")); }
                 catch (NumberFormatException ignored) {}
             }
         }
 
-        // 3. Fallback: Any currency amount in the text before the balance clause
+        // 3. Fallback: Any currency amount in textWithoutBal
         if (amount < 0) {
             java.util.regex.Pattern genericPattern = java.util.regex.Pattern.compile(
                 "(?i)(?:₹|rs\\.?\\s*|inr\\s*)([0-9,]+(?:\\.[0-9]{1,2})?)"
@@ -192,7 +206,7 @@ public class TransactionCaptureService extends NotificationListenerService {
 
         // 4. Ultimate fallback on full text with Pattern 1
         if (amount < 0) {
-            java.util.regex.Matcher m4 = debitAfterPattern.matcher(combined);
+            java.util.regex.Matcher m4 = actionAfterPattern.matcher(combined);
             if (m4.find()) {
                 try { amount = Double.parseDouble(m4.group(1).replace(",", "")); }
                 catch (NumberFormatException ignored) {}
@@ -218,6 +232,7 @@ public class TransactionCaptureService extends NotificationListenerService {
             record.put("title",       title);
             record.put("text",        body);
             record.put("amount",      amount);
+            record.put("type",        txnType);
             record.put("timestamp",   sbn.getPostTime());
             queue.put(record);
 

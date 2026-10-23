@@ -53,11 +53,18 @@ function AppEffects() {
       if (syncing || !transactionCaptureService.isNative()) return;
       syncing = true;
       try {
-        const count = await transactionCaptureService.importPending(
+        const { expenses, incomes } = await transactionCaptureService.importPending(
           useCategoryStore.getState().categories,
           useExpenseStore.getState().addExpense,
+          useIncomeStore.getState().addIncome,
         );
-        if (count) useUiStore.getState().addToast(`${count} payment${count === 1 ? '' : 's'} added from notifications`, 'success');
+        if (expenses > 0 && incomes > 0) {
+          useUiStore.getState().addToast(`${expenses} expense${expenses === 1 ? '' : 's'} & ${incomes} income${incomes === 1 ? '' : 's'} added from notifications`, 'success');
+        } else if (expenses > 0) {
+          useUiStore.getState().addToast(`${expenses} payment${expenses === 1 ? '' : 's'} added from notifications`, 'success');
+        } else if (incomes > 0) {
+          useUiStore.getState().addToast(`${incomes} incoming payment${incomes === 1 ? '' : 's'} added to income`, 'success');
+        }
       } catch (error) {
         if (import.meta.env.DEV) console.error('Could not import captured notifications', error);
       } finally {
