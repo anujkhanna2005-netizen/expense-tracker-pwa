@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.provider.Settings;
 import com.getcapacitor.*;
+import com.getcapacitor.annotation.CapacitorPlugin;
 import org.json.JSONArray;
 
 @CapacitorPlugin(name = "TransactionCapture")
