@@ -16,6 +16,17 @@ import { parseHdfcStatementPdf, parseStatementCsv, type ImportedTransaction } fr
 
 import { useVirtualizer } from '@tanstack/react-virtual';
 
+/** Infer payment method from the statement description text. */
+function inferPaymentMethod(description: string): Expense['paymentMethod'] {
+  const text = description.toLowerCase();
+  if (/\bneft\b/.test(text)) return 'Bank Transfer';
+  if (/\bimps\b/.test(text)) return 'Bank Transfer';
+  if (/\brtgs\b/.test(text)) return 'Bank Transfer';
+  if (/^upi\b/i.test(description)) return 'UPI';
+  if (/\bupi\b/.test(text)) return 'UPI';
+  return 'Bank Transfer';
+}
+
 const Expenses: React.FC = () => {
   const { expenses, deleteExpense, addExpense } = useExpenses();
   const { categories } = useCategories();
@@ -34,6 +45,7 @@ const Expenses: React.FC = () => {
   const [statementFile, setStatementFile] = useState<File | null>(null);
   const [statementPassword, setStatementPassword] = useState('');
   const pendingDeleteRef = useRef<{ expense: Expense; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -124,14 +136,20 @@ const Expenses: React.FC = () => {
     const selected = importRows.filter((row) => row.selected);
     let imported = 0;
     for (const row of selected) {
-      const paymentMethod = /^upi\b/i.test(row.description) ? 'UPI' : 'Bank Transfer';
+      const paymentMethod = inferPaymentMethod(row.description);
       if (addExpense({ amount: row.amount, categoryId: row.categoryId, date: row.date, notes: row.description, paymentMethod })) imported += 1;
     }
     setImportRows([]);
     setImporting(false);
     setImportError('');
+    setStatementFile(null);
+    // Reset the file input so the same file can be chosen again if needed
+    if (fileInputRef.current) fileInputRef.current.value = '';
     toast(`${imported} transaction${imported === 1 ? '' : 's'} imported`, 'success');
   };
+
+  const toggleAllSelected = (checked: boolean) =>
+    setImportRows((current) => current.map((row) => ({ ...row, selected: checked })));
 
   const rowVirtualizer = useVirtualizer({
     count: filteredExpenses.length,
@@ -193,26 +211,99 @@ const Expenses: React.FC = () => {
           Import statement
         </Button>
       </header>
-
       {importing && <section className={styles.importPanel} aria-label="Import bank statement">
         <div className={styles.importIntro}>
           <h2>Import a bank statement</h2>
-          <p>Choose a CSV export, or a password-protected HDFC statement PDF. The file and password are processed in this browser. Credits are skipped; review each debit and its suggested category before importing.</p>
-          <label className={styles.filePicker}>Choose statement<input type="file" accept=".csv,text/csv,.pdf,application/pdf" onChange={(event) => void handleStatementFile(event.target.files?.[0])} /></label>
-          {statementFile?.name.toLowerCase().endsWith('.pdf') && <div className={styles.passwordRow}><Input label="PDF password" type="password" autoComplete="off" value={statementPassword} onChange={setStatementPassword} /><Button onClick={() => void readPdfStatement()} disabled={!statementPassword}>Read PDF</Button><small>Password is used locally to open this file and is not saved.</small></div>}
+          <p>Choose a CSV export or a password-protected HDFC statement PDF. Files are parsed in this browser. Credits, refunds, and balance-only lines are skipped automatically. Review each debit and its suggested category before importing.</p>
+          <label className={styles.filePicker}>Choose statement
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv,.pdf,application/pdf"
+              onChange={(event) => void handleStatementFile(event.target.files?.[0])}
+            />
+          </label>
+          {statementFile?.name.toLowerCase().endsWith('.pdf') && (
+            <div className={styles.passwordRow}>
+              <Input label="PDF password" type="password" autoComplete="off" value={statementPassword} onChange={setStatementPassword} />
+              <Button onClick={() => void readPdfStatement()} disabled={!statementPassword}>Read PDF</Button>
+              <small>Password is used locally to open this file and is not saved.</small>
+            </div>
+          )}
         </div>
         {importError && <p className={styles.importError} role="alert">{importError}</p>}
-        {importRows.length > 0 && <>
-          <p className={styles.importSummary}>{importRows.filter((row) => row.selected).length} new expense rows selected. Rows already in your tracker are unselected.</p>
-          <div className={styles.importTableWrap}><table className={styles.importTable}><thead><tr><th>Import</th><th>Date</th><th>Description</th><th>Amount</th><th>Category</th></tr></thead><tbody>
-            {importRows.map((row) => <tr key={row.id}>
-              <td><input aria-label={`Import ${row.description}`} type="checkbox" checked={row.selected} onChange={(event) => setImportRows((current) => current.map((item) => item.id === row.id ? { ...item, selected: event.target.checked } : item))} /></td>
-              <td>{row.date}</td><td>{row.description}</td><td>{formatCurrency(row.amount, settings.currency)}</td>
-              <td><select aria-label={`Category for ${row.description}`} value={row.categoryId} onChange={(event) => setImportRows((current) => current.map((item) => item.id === row.id ? { ...item, categoryId: event.target.value } : item))}>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></td>
-            </tr>)}
-          </tbody></table></div>
-          <div className={styles.importActions}><Button variant="ghost" onClick={() => { setImporting(false); setImportRows([]); }}>Cancel</Button><Button onClick={importSelected} disabled={!importRows.some((row) => row.selected)}>Import selected</Button></div>
-        </>}
+        {importRows.length > 0 && (() => {
+          const selectedRows = importRows.filter((row) => row.selected);
+          const selectedTotal = selectedRows.reduce((sum, row) => sum + row.amount, 0);
+          const allSelected = importRows.every((row) => row.selected);
+          return (
+            <>
+              <p className={styles.importSummary}>
+                {selectedRows.length} of {importRows.length} rows selected
+                {selectedRows.length > 0 && <> &nbsp;·&nbsp; <strong>{formatCurrency(selectedTotal, settings.currency)}</strong> total</>}
+                {' '}&mdash; rows already in your tracker are unselected.
+              </p>
+              <div className={styles.importTableWrap}>
+                <table className={styles.importTable}>
+                  <thead>
+                    <tr>
+                      <th>
+                        <input
+                          type="checkbox"
+                          aria-label={allSelected ? 'Deselect all' : 'Select all'}
+                          checked={allSelected}
+                          onChange={(e) => toggleAllSelected(e.target.checked)}
+                        />
+                      </th>
+                      <th>Date</th>
+                      <th>Description</th>
+                      <th>Amount</th>
+                      <th>Category</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importRows.map((row) => (
+                      <tr key={row.id}>
+                        <td>
+                          <input
+                            aria-label={`Import ${row.description}`}
+                            type="checkbox"
+                            checked={row.selected}
+                            onChange={(event) => setImportRows((current) =>
+                              current.map((item) => item.id === row.id ? { ...item, selected: event.target.checked } : item)
+                            )}
+                          />
+                        </td>
+                        <td>{row.date}</td>
+                        <td>{row.description}</td>
+                        <td>{formatCurrency(row.amount, settings.currency)}</td>
+                        <td>
+                          <select
+                            aria-label={`Category for ${row.description}`}
+                            value={row.categoryId}
+                            onChange={(event) => setImportRows((current) =>
+                              current.map((item) => item.id === row.id ? { ...item, categoryId: event.target.value } : item)
+                            )}
+                          >
+                            {categories.map((category) => (
+                              <option key={category.id} value={category.id}>{category.name}</option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className={styles.importActions}>
+                <Button variant="ghost" onClick={() => { setImporting(false); setImportRows([]); }}>Cancel</Button>
+                <Button onClick={importSelected} disabled={selectedRows.length === 0}>
+                  Import {selectedRows.length > 0 ? `${selectedRows.length} rows` : 'selected'}
+                </Button>
+              </div>
+            </>
+          );
+        })()}
       </section>}
 
       <div className={styles.controls}>

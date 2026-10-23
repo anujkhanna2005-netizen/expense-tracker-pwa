@@ -43,16 +43,51 @@ const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, 
 export function suggestCategory(description: string, categories: Category[]): string {
   const text = normalize(description);
   const rules: Array<[string[], string[]]> = [
-    [['petrol', 'fuel', 'indian oil', 'bharat petroleum', 'hpcl', 'iocl', 'shell', 'pump'], ['fuel']],
-    [['swiggy', 'zomato', 'restaurant', 'cafe', 'coffee', 'food', 'dominos', 'pizza', 'mcdonald'], ['food', 'dining']],
-    [['grocery', 'groceries', 'bigbasket', 'blinkit', 'zepto', 'dmart', 'supermarket'], ['grocer']],
-    [['electricity', 'power bill', 'bescom', 'tneb'], ['electricity']],
-    [['water bill', 'water supply'], ['water']],
-    [['broadband', 'internet', 'airtel recharge', 'jio recharge'], ['internet']],
-    [['pharmacy', 'medical', 'hospital', 'apollo', 'medplus'], ['medical']],
-    [['movie', 'cinema', 'netflix', 'spotify', 'bookmyshow'], ['entertain']],
-    [['uber', 'ola', 'irctc', 'metro', 'redbus'], ['travel']],
-    [['amazon', 'flipkart', 'myntra', 'shopping'], ['shopping']],
+    // Fuel / Petrol
+    [['petrol', 'fuel', 'indian oil', 'iocl', 'bharat petroleum', 'bpcl', 'hpcl', 'shell', 'pump', 'filling station'], ['fuel', 'petrol']],
+    // Food & Dining — restaurants, delivery, cafes
+    [['swiggy', 'zomato', 'restaurant', 'cafe', 'coffee', 'food', 'dominos', 'pizza', 'mcdonald', 'kfc', 'burger king',
+      'subway', 'starbucks', 'chai point', 'box8', 'faasos', 'freshmenu', 'rebel foods', 'wow momo', 'haldiram',
+      'behrouz', 'dunkin'], ['food', 'dining', 'restaurant']],
+    // Groceries & Essentials
+    [['grocery', 'groceries', 'bigbasket', 'blinkit', 'grofers', 'zepto', 'dmart', 'd mart', 'supermarket',
+      'jiomart', 'nature s basket', 'swiggy instamart', 'instamart', 'milkbasket', 'country delight'], ['grocer']],
+    // Electricity & Power
+    [['electricity', 'power bill', 'bescom', 'tneb', 'tata power', 'adani electricity', 'msedcl', 'bses', 'kseb',
+      'cesc', 'torrent power', 'wbsedcl', 'apepdcl'], ['electricity', 'power', 'utility']],
+    // Water
+    [['water bill', 'water supply', 'bwssb', 'bmc water', 'nmmc water'], ['water', 'utility']],
+    // Internet & DTH
+    [['broadband', 'internet', 'airtel', 'jio', 'bsnl', 'act fibernet', 'hathway', 'tata sky',
+      'dish tv', 'sun direct', 'd2h', 'videocon d2h', 'dth', 'tatasky'], ['internet', 'broadband', 'utility']],
+    // Mobile Recharge
+    [['recharge', 'mobile recharge', 'prepaid recharge', 'paytm recharge'], ['mobile', 'recharge', 'utility']],
+    // LPG / Gas
+    [['lpg', 'indane', 'hp gas', 'bharat gas', 'gas booking', 'gas cylinder'], ['lpg', 'gas', 'utility']],
+    // Medical & Health
+    [['pharmacy', 'medical', 'hospital', 'apollo', 'medplus', 'practo', 'netmeds', '1mg', 'pharmeasy',
+      'healthians', 'thyrocare', 'diagnostic', 'clinic', 'pathlab', 'narayana', 'fortis', 'manipal'], ['medical', 'health']],
+    // Entertainment & Subscriptions
+    [['movie', 'cinema', 'multiplex', 'pvr', 'inox', 'cinepolis', 'netflix', 'spotify', 'amazon prime',
+      'hotstar', 'disney', 'zee5', 'sonyliv', 'bookmyshow', 'liveevents', 'youtube premium'], ['entertain', 'subscription']],
+    // Travel & Transport
+    [['uber', 'ola', 'rapido', 'namma yatri', 'irctc', 'makemytrip', 'goibibo', 'ixigo', 'metro', 'redbus',
+      'yatra', 'easemytrip', 'bmtc', 'ksrtc', 'tsrtc', 'delhimetro', 'toll', 'fastag', 'parking'], ['travel', 'transport']],
+    // Shopping & Fashion
+    [['amazon', 'flipkart', 'myntra', 'meesho', 'nykaa', 'ajio', 'tata cliq', 'snapdeal', 'shopclues',
+      'jiomart', 'lifestyle', 'pantaloons', 'westside', 'max fashion', 'reliance trends', 'shopping'], ['shopping', 'fashion']],
+    // Rent & Housing
+    [['rent', 'house rent', 'maintenance', 'society maintenance', 'property tax', 'housing'], ['rent', 'housing']],
+    // EMI & Loan
+    [['emi', 'loan repayment', 'loan payment', 'installment', 'credit card bill', 'cc bill',
+      'hdfc emi', 'icici emi', 'bajaj finserv', 'capital float'], ['emi', 'loan', 'finance']],
+    // Insurance
+    [['insurance', 'lic', 'term plan', 'health insurance', 'motor insurance', 'vehicle insurance',
+      'policy premium', 'star health', 'icici lombard', 'hdfc ergo', 'bajaj allianz'], ['insurance']],
+    // Education
+    [['school fees', 'college fees', 'tuition', 'coaching', 'byju', 'unacademy', 'vedantu', 'coursera', 'udemy'], ['education']],
+    // Gym & Fitness
+    [['gym', 'fitness', 'cult fit', 'cure fit', 'yoga', 'sports'], ['fitness', 'health']],
   ];
   for (const [needles, categoryTerms] of rules) {
     if (!needles.some((needle) => text.includes(needle))) continue;
@@ -96,15 +131,23 @@ export function parseStatementCsv(text: string, categories: Category[], existing
   if (dateIndex < 0 || descriptionIndex < 0 || (debitIndex < 0 && amountIndex < 0)) {
     throw new Error('Could not find date, description, and debit/amount columns. Rename the CSV headers and try again.');
   }
+  const typeIndex = findColumn(['type', 'txn type', 'transaction type', 'dr cr', 'cr dr']);
   const existingKeys = new Set(existing.map((expense) => `${expense.date}|${expense.amount}|${normalize(expense.notes || '')}`));
+  const CREDIT_DESC_RE = /\b(credit|credited|refund|reversal|cashback|reward|received|money in|deposit|neft cr|imps cr|rtgs cr|upi cr)\b/i;
   return rows.slice(1).flatMap((row, index) => {
     const date = dateToIso(row[dateIndex] || '');
     const description = row[descriptionIndex]?.trim() || '';
+    const typeValue = typeIndex >= 0 ? (row[typeIndex] || '').trim().toLowerCase() : '';
+    // Skip rows marked as credit in a type column
+    if (typeIndex >= 0 && (typeValue === 'cr' || typeValue === 'credit' || typeValue === 'credited')) return [];
     const debitRaw = debitIndex >= 0 ? row[debitIndex] : row[amountIndex];
     const creditRaw = creditIndex >= 0 ? row[creditIndex] : '';
     const amount = Number((debitRaw || '').replace(/[₹,\s]/g, ''));
     const credit = Number((creditRaw || '').replace(/[₹,\s]/g, ''));
+    // Skip if explicit credit column has a value
     if (!date || !description || !Number.isFinite(amount) || amount <= 0 || (Number.isFinite(credit) && credit > 0)) return [];
+    // When there is no separate debit column and no credit column, also filter by description keywords
+    if (debitIndex < 0 && creditIndex < 0 && CREDIT_DESC_RE.test(description)) return [];
     const fingerprint = `${date}|${amount}|${normalize(description)}`;
     return [{ id: `row-${index}`, date, amount, description, fingerprint, categoryId: suggestCategory(description, categories), selected: !existingKeys.has(fingerprint) }];
   });
