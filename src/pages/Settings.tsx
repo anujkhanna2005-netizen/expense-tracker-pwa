@@ -26,6 +26,7 @@ import { DataSection } from './Settings/DataSection';
 import { NotificationSection } from './Settings/NotificationSection';
 import { SecuritySection } from './Settings/SecuritySection';
 import { DangerZoneSection } from './Settings/DangerZoneSection';
+import { TransactionCaptureSection } from './Settings/TransactionCaptureSection';
 import styles from './Settings.module.css';
 
 const Settings: React.FC = () => {
@@ -314,6 +315,8 @@ const Settings: React.FC = () => {
         notificationPermission={notificationPermission}
         handleRequestNotificationPermission={handleRequestNotificationPermission}
       />
+
+      <TransactionCaptureSection />
 
       <SecuritySection
         settings={settings}

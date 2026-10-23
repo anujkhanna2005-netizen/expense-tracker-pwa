@@ -10,11 +10,14 @@ import { useExpenseStore } from './stores/expenseStore';
 import { useCategoryStore } from './stores/categoryStore';
 import { useGoalStore } from './stores/goalStore';
 import { useIncomeStore } from './stores/incomeStore';
+import { useUiStore } from './stores/uiStore';
 import { useSettingsStore } from './stores/settingsStore';
 import { useHydration } from './hooks/useHydration';
 import { encryptionService } from './services/encryptionService';
 import { notificationService } from './services/notificationService';
 import PinLockScreen from './components/PinLockScreen';
+import { App as CapacitorApp } from '@capacitor/app';
+import { transactionCaptureService } from './services/transactionCaptureService';
 
 // Lazy load route pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -42,6 +45,30 @@ function AppEffects() {
     // Run bill reminders check on app load/mount
     const bills = useBillStore.getState().bills;
     notificationService.checkAndNotifyDueBills(bills);
+  }, []);
+
+  useEffect(() => {
+    let syncing = false;
+    const syncTransactions = async () => {
+      if (syncing || !transactionCaptureService.isNative()) return;
+      syncing = true;
+      try {
+        const count = await transactionCaptureService.importPending(
+          useCategoryStore.getState().categories,
+          useExpenseStore.getState().addExpense,
+        );
+        if (count) useUiStore.getState().addToast(`${count} payment${count === 1 ? '' : 's'} added from notifications`, 'success');
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('Could not import captured notifications', error);
+      } finally {
+        syncing = false;
+      }
+    };
+    void syncTransactions();
+    const listener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) void syncTransactions();
+    });
+    return () => { void listener.then((handle) => handle.remove()); };
   }, []);
 
   return null;
