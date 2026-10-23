@@ -22,6 +22,31 @@
   font-size: 14px;
 }
 
+.importPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.importIntro h2 { margin: 0 0 6px; color: var(--text-primary); font-size: 18px; }
+.importIntro p, .importSummary { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
+.filePicker { display: inline-flex; align-items: center; margin-top: 12px; padding: 9px 14px; border-radius: var(--radius-md); background: var(--accent-primary); color: white; font-size: 14px; font-weight: 600; cursor: pointer; }
+.filePicker input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+.passwordRow { display: flex; align-items: flex-end; flex-wrap: wrap; gap: var(--spacing-sm); max-width: 520px; margin-top: 12px; }
+.passwordRow small { width: 100%; color: var(--text-muted); font-size: 12px; }
+.importError { margin: 0; color: var(--danger); font-size: 14px; }
+.importTableWrap { overflow: auto; max-height: 360px; border: 1px solid var(--border-color); border-radius: var(--radius-md); }
+.importTable { width: 100%; border-collapse: collapse; font-size: 13px; color: var(--text-primary); }
+.importTable th, .importTable td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+.importTable th { position: sticky; top: 0; background: var(--bg-tertiary); z-index: 1; }
+.importTable td:nth-child(3) { white-space: normal; min-width: 180px; }
+.importTable select { max-width: 170px; padding: 6px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); }
+.importActions { display: flex; justify-content: flex-end; gap: var(--spacing-sm); }
+
 .controls {
   display: flex;
   flex-direction: column;

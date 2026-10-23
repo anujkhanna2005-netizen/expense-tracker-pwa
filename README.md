@@ -1,73 +1,26 @@
-# React + TypeScript + Vite
+# Expense Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Personal expense tracker built with React, TypeScript, Vite, and Capacitor.
 
-Currently, two official plugins are available:
+## Android notification capture
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The Android build includes a local `NotificationListenerService`. After the user explicitly enables notification access in Android Settings, it recognizes a limited set of outgoing payment notifications, queues matching alerts in private app storage, and imports them into expenses when the app is opened or resumed. There is no confirmation for each payment. Credits, refunds, failed payments, and pending payments are excluded. Category rules run locally using notification text.
 
-## React Compiler
+Android requires the user to grant notification access; the app cannot enable this permission itself. Android notification access may expose notification content from other apps to the listener, so this implementation only retains matching outgoing-payment alerts and disables Android app-data backup. Notifications that are hidden, grouped, or formatted unexpectedly may not be captured, and a UPI app plus bank notification for the same payment can still produce duplicates.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The Android app's local data is separate from the hosted PWA's browser storage. This implementation does not sync expenses between devices or to the hosted website.
 
-## Expanding the ESLint configuration
+## Build
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+npm ci
+npm run build
+npx cap sync android
+npx cap open android
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Build/install the Android app from Android Studio with the Android SDK installed. On the phone, open **Settings → Automatic payment capture → Enable on Android**, then enable **Expense Tracker transaction capture** in Android's Notification access settings. Captured payments are imported next time the tracker is open or resumed.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Statement imports
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+The Expenses page can also import bank CSV files and password-protected HDFC statement PDFs. Files are parsed locally in the browser and shown for review before import.

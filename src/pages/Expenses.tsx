@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { formatCurrency } from '../utils/format';
-import { Trash2, Edit2, ReceiptText } from 'lucide-react';
+import { Trash2, Edit2, ReceiptText, Upload } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import EditExpenseModal from '../components/EditExpenseModal';
 import Select from '../components/ui/Select';
@@ -12,6 +12,7 @@ import { useCategories } from '../hooks/useCategories';
 import { useSettings } from '../hooks/useSettings';
 import type { Expense } from '../types';
 import styles from './Expenses.module.css';
+import { parseHdfcStatementPdf, parseStatementCsv, type ImportedTransaction } from '../services/statementImportService';
 
 import { useVirtualizer } from '@tanstack/react-virtual';
 
@@ -27,6 +28,11 @@ const Expenses: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [importRows, setImportRows] = useState<ImportedTransaction[]>([]);
+  const [importError, setImportError] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [statementFile, setStatementFile] = useState<File | null>(null);
+  const [statementPassword, setStatementPassword] = useState('');
   const pendingDeleteRef = useRef<{ expense: Expense; timer: ReturnType<typeof setTimeout> } | null>(null);
   
   const parentRef = useRef<HTMLDivElement>(null);
@@ -88,6 +94,45 @@ const Expenses: React.FC = () => {
 
   const totalFilteredAmount = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
 
+  const handleStatementFile = async (file?: File) => {
+    setImportError('');
+    setImportRows([]);
+    setStatementPassword('');
+    if (!file) return;
+    setStatementFile(file);
+    if (file.name.toLowerCase().endsWith('.pdf')) return;
+    if (!file.name.toLowerCase().endsWith('.csv')) { setImportError('Choose a CSV or password-protected HDFC statement PDF.'); return; }
+    try {
+      setImportRows(parseStatementCsv(await file.text(), categories, expenses));
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Could not read this statement.');
+    }
+  };
+
+  const readPdfStatement = async () => {
+    if (!statementFile) return;
+    setImportError('');
+    try {
+      setImportRows(await parseHdfcStatementPdf(statementFile, statementPassword, categories, expenses));
+      setStatementPassword('');
+    } catch (error) {
+      setImportError(error instanceof Error && /password/i.test(error.message) ? 'The password was not accepted. Check it and try again.' : error instanceof Error ? error.message : 'Could not read this statement.');
+    }
+  };
+
+  const importSelected = () => {
+    const selected = importRows.filter((row) => row.selected);
+    let imported = 0;
+    for (const row of selected) {
+      const paymentMethod = /^upi\b/i.test(row.description) ? 'UPI' : 'Bank Transfer';
+      if (addExpense({ amount: row.amount, categoryId: row.categoryId, date: row.date, notes: row.description, paymentMethod })) imported += 1;
+    }
+    setImportRows([]);
+    setImporting(false);
+    setImportError('');
+    toast(`${imported} transaction${imported === 1 ? '' : 's'} imported`, 'success');
+  };
+
   const rowVirtualizer = useVirtualizer({
     count: filteredExpenses.length,
     getScrollElement: () => parentRef.current,
@@ -144,7 +189,31 @@ const Expenses: React.FC = () => {
           <h1 className={styles.title}>Expenses</h1>
           <p className={styles.subtitle}>{filteredExpenses.length} transactions • {formatCurrency(totalFilteredAmount, settings.currency)}</p>
         </div>
+        <Button variant="secondary" icon={<Upload size={16} />} onClick={() => { setImporting((open) => !open); setImportError(''); setImportRows([]); }}>
+          Import statement
+        </Button>
       </header>
+
+      {importing && <section className={styles.importPanel} aria-label="Import bank statement">
+        <div className={styles.importIntro}>
+          <h2>Import a bank statement</h2>
+          <p>Choose a CSV export, or a password-protected HDFC statement PDF. The file and password are processed in this browser. Credits are skipped; review each debit and its suggested category before importing.</p>
+          <label className={styles.filePicker}>Choose statement<input type="file" accept=".csv,text/csv,.pdf,application/pdf" onChange={(event) => void handleStatementFile(event.target.files?.[0])} /></label>
+          {statementFile?.name.toLowerCase().endsWith('.pdf') && <div className={styles.passwordRow}><Input label="PDF password" type="password" autoComplete="off" value={statementPassword} onChange={setStatementPassword} /><Button onClick={() => void readPdfStatement()} disabled={!statementPassword}>Read PDF</Button><small>Password is used locally to open this file and is not saved.</small></div>}
+        </div>
+        {importError && <p className={styles.importError} role="alert">{importError}</p>}
+        {importRows.length > 0 && <>
+          <p className={styles.importSummary}>{importRows.filter((row) => row.selected).length} new expense rows selected. Rows already in your tracker are unselected.</p>
+          <div className={styles.importTableWrap}><table className={styles.importTable}><thead><tr><th>Import</th><th>Date</th><th>Description</th><th>Amount</th><th>Category</th></tr></thead><tbody>
+            {importRows.map((row) => <tr key={row.id}>
+              <td><input aria-label={`Import ${row.description}`} type="checkbox" checked={row.selected} onChange={(event) => setImportRows((current) => current.map((item) => item.id === row.id ? { ...item, selected: event.target.checked } : item))} /></td>
+              <td>{row.date}</td><td>{row.description}</td><td>{formatCurrency(row.amount, settings.currency)}</td>
+              <td><select aria-label={`Category for ${row.description}`} value={row.categoryId} onChange={(event) => setImportRows((current) => current.map((item) => item.id === row.id ? { ...item, categoryId: event.target.value } : item))}>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></td>
+            </tr>)}
+          </tbody></table></div>
+          <div className={styles.importActions}><Button variant="ghost" onClick={() => { setImporting(false); setImportRows([]); }}>Cancel</Button><Button onClick={importSelected} disabled={!importRows.some((row) => row.selected)}>Import selected</Button></div>
+        </>}
+      </section>}
 
       <div className={styles.controls}>
         <div className={styles.searchBox}>
