@@ -56,11 +56,18 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                   style={{ cursor: txn.raw ? 'pointer' : 'default' }}
                 >
                   <div className={styles.txnIcon}>{txn.icon}</div>
-                  <div className={styles.txnDetails} style={{ flex: 1, minWidth: 0 }}>
-                    <span className={styles.txnCat} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div className={styles.txnDetails} style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                    <span
+                      className={styles.txnCat}
+                      style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    >
                       {txn.title}
                     </span>
-                    <span className={styles.txnDate}>
+                    <span
+                      className={styles.txnDate}
+                      style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      title={txn.subtitle}
+                    >
                       {new Date(txn.date).toLocaleDateString()} • {txn.subtitle}
                     </span>
                   </div>
@@ -70,6 +77,9 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                       color: isIncome ? '#10b981' : undefined,
                       fontWeight: 600,
                       whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      marginLeft: '8px',
+                      textAlign: 'right',
                     }}
                   >
                     {isIncome ? '+' : '-'}{formatCurrency(txn.amount, settings.currency)}
