@@ -96,8 +96,10 @@
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  padding: var(--spacing-xl) var(--spacing-md);
-  padding-bottom: 100px; /* Space for FAB/Bottom Nav */
+  padding: var(--spacing-md);
+  padding-bottom: 110px; /* Space for FAB/Bottom Nav */
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Floating Action Button */
@@ -195,9 +197,9 @@
   right: 0;
   background-color: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
-  padding: var(--spacing-xs) 0;
+  padding: 8px 4px calc(8px + env(safe-area-inset-bottom, 0px));
   z-index: 50;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
 }
 
 .bottomNavItem {
@@ -206,8 +208,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   color: var(--text-muted);
+  min-width: 0;
 }
 
 .bottomNavItem.active {

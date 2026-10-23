@@ -397,14 +397,14 @@ const Expenses: React.FC = () => {
             className={`${styles.typeTabBtn} ${typeFilter === 'expense' ? styles.typeTabBtnActive : ''}`}
             onClick={() => setTypeFilter('expense')}
           >
-            Expenses (Debits)
+            Expenses
           </button>
           <button
             type="button"
             className={`${styles.typeTabBtn} ${typeFilter === 'income' ? styles.typeTabBtnActive : ''}`}
             onClick={() => setTypeFilter('income')}
           >
-            Income (Credits)
+            Income
           </button>
         </div>
 

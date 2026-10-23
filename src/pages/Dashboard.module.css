@@ -23,8 +23,25 @@
 
 .snapshot {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .snapshot {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+  }
+}
+
+.biggestExpenseCard {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 768px) {
+  .biggestExpenseCard {
+    grid-column: auto;
+  }
 }
 
 .card {
@@ -249,9 +266,24 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 360px) {
   .snapshot {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 14px 16px;
+  }
+  .cardValue {
+    font-size: 24px;
+  }
+  .cardLabel {
+    font-size: 11px;
+  }
+  .title {
+    font-size: 20px;
   }
 }
 
