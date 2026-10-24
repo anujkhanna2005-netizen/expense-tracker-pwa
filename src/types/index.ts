@@ -17,6 +17,14 @@ export interface Expense {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  /** Whether this payment was reversed (e.g. failed payment reversal) */
+  isReversed?: boolean;
+  /** Cumulative amount refunded against this expense */
+  refundedAmount?: number;
+  /** IDs of refunds/reversals linked to this expense */
+  linkedRefundIds?: string[];
+  /** Whether this is an internal transfer between user's own accounts */
+  isTransfer?: boolean;
 }
 
 export interface Bill {
@@ -48,6 +56,10 @@ export interface Settings {
   monthlyBudgetLimit?: number;
   /** Per-category spending limits. Key = categoryId, value = limit amount. 0 or absent = no limit */
   categoryBudgets?: Record<string, number>;
+  /** Local memory of preferred category per merchant/payee keyword */
+  merchantCategoryMap?: Record<string, string>;
+  /** Whether to automatically import high-confidence captured transactions without review */
+  autoImportHighConfidence?: boolean;
   pinEnabled?: boolean;
   pinHash?: string;
   pinSalt?: string;

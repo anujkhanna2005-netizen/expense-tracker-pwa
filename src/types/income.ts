@@ -21,4 +21,10 @@ export interface Income {
   recurringFrequency?: 'weekly' | 'monthly';
   createdAt: string;
   updatedAt: string;
+  /** Whether this is an internal transfer between user's own accounts */
+  isTransfer?: boolean;
+  /** Whether this is a reversal of a failed/cancelled payment */
+  isReversal?: boolean;
+  /** ID of the original expense that was reversed or refunded */
+  linkedExpenseId?: string;
 }

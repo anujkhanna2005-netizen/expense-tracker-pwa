@@ -17,7 +17,7 @@ import { encryptionService } from './services/encryptionService';
 import { notificationService } from './services/notificationService';
 import PinLockScreen from './components/PinLockScreen';
 import { App as CapacitorApp } from '@capacitor/app';
-import { transactionCaptureService } from './services/transactionCaptureService';
+import { transactionCaptureService, cleanupCorruptedTransactions } from './services/transactionCaptureService';
 
 // Lazy load route pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -46,6 +46,13 @@ function AppEffects() {
     const bills = useBillStore.getState().bills;
     notificationService.checkAndNotifyDueBills(bills);
 
+    // Automatically purge any corrupt WhatsApp chat expenses or duplicate notification alerts
+    const { removedExpenses, removedIncomes } = cleanupCorruptedTransactions();
+    if (removedExpenses > 0 || removedIncomes > 0) {
+      const total = removedExpenses + removedIncomes;
+      useUiStore.getState().addToast(`Cleaned ${total} invalid chat / duplicate notification entry${total === 1 ? '' : 's'}`, 'info');
+    }
+
     // Reconcile any test transactions imported with 2024 dates when running on 2026 system clock
     const currentYear = new Date().getFullYear().toString();
     if (currentYear === '2026') {
@@ -70,12 +77,14 @@ function AppEffects() {
       if (syncing || !transactionCaptureService.isNative()) return;
       syncing = true;
       try {
-        const { expenses, incomes } = await transactionCaptureService.importPending(
+        const { expenses, incomes, queuedForReview } = await transactionCaptureService.importPending(
           useCategoryStore.getState().categories,
           useExpenseStore.getState().addExpense,
           useIncomeStore.getState().addIncome,
         );
-        if (expenses > 0 && incomes > 0) {
+        if (queuedForReview > 0) {
+          useUiStore.getState().addToast(`${queuedForReview} payment alert${queuedForReview === 1 ? '' : 's'} captured for review`, 'info');
+        } else if (expenses > 0 && incomes > 0) {
           useUiStore.getState().addToast(`${expenses} expense${expenses === 1 ? '' : 's'} & ${incomes} income${incomes === 1 ? '' : 's'} added from notifications`, 'success');
         } else if (expenses > 0) {
           useUiStore.getState().addToast(`${expenses} payment${expenses === 1 ? '' : 's'} added from notifications`, 'success');

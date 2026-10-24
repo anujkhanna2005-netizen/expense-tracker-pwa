@@ -16,7 +16,11 @@ export const expenseSchema = z.object({
   paymentMethod: z.enum(PAYMENT_METHODS),
   notes: z.string().optional(),
   createdAt: z.string(),
-  updatedAt: z.string()
+  updatedAt: z.string(),
+  isReversed: z.boolean().optional(),
+  refundedAmount: z.number().nonnegative().optional(),
+  linkedRefundIds: z.array(z.string()).optional(),
+  isTransfer: z.boolean().optional(),
 });
 
 export const billSchema = z.object({
@@ -49,7 +53,10 @@ export const incomeSchema = z.object({
   isRecurring: z.boolean(),
   recurringFrequency: z.enum(['weekly', 'monthly']).optional(),
   createdAt: z.string(),
-  updatedAt: z.string()
+  updatedAt: z.string(),
+  isTransfer: z.boolean().optional(),
+  isReversal: z.boolean().optional(),
+  linkedExpenseId: z.string().optional(),
 });
 
 export const settingsSchema = z.object({
@@ -58,6 +65,8 @@ export const settingsSchema = z.object({
   monthlyBudgetLimit: z.number().positive('Monthly budget limit must be positive').optional(),
   // Per-category budgets: Record<categoryId, limit> — optional, defaults to {} on first load
   categoryBudgets: z.record(z.string(), z.number().nonnegative()).optional(),
+  merchantCategoryMap: z.record(z.string(), z.string()).optional(),
+  autoImportHighConfidence: z.boolean().optional(),
   pinEnabled: z.boolean().optional(),
   pinHash: z.string().optional(),
   pinSalt: z.string().optional(),

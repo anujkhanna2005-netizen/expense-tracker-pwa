@@ -40,8 +40,33 @@ function parseCsv(text: string): string[][] {
 
 const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
-export function suggestCategory(description: string, categories: Category[]): string {
+export interface CategorySuggestion {
+  categoryId: string;
+  confidence: 'high' | 'needs_review';
+  reason?: string;
+}
+
+export function suggestCategoryWithConfidence(
+  description: string,
+  categories: Category[],
+  merchantMap?: Record<string, string>
+): CategorySuggestion {
   const text = normalize(description);
+
+  // 1. Check user-learned merchant mappings first
+  if (merchantMap) {
+    for (const [merchant, catId] of Object.entries(merchantMap)) {
+      const normMerchant = normalize(merchant);
+      if (normMerchant && (text.includes(normMerchant) || normMerchant.includes(text))) {
+        const found = categories.find((c) => c.id === catId);
+        if (found) {
+          return { categoryId: found.id, confidence: 'high', reason: `Matched remembered merchant "${merchant}"` };
+        }
+      }
+    }
+  }
+
+  // 2. Built-in keyword rules
   const rules: Array<[string[], string[]]> = [
     // Fuel / Petrol
     [['petrol', 'fuel', 'indian oil', 'iocl', 'bharat petroleum', 'bpcl', 'hpcl', 'shell', 'pump', 'filling station'], ['fuel', 'petrol']],
@@ -89,12 +114,22 @@ export function suggestCategory(description: string, categories: Category[]): st
     // Gym & Fitness
     [['gym', 'fitness', 'cult fit', 'cure fit', 'yoga', 'sports'], ['fitness', 'health']],
   ];
+
   for (const [needles, categoryTerms] of rules) {
     if (!needles.some((needle) => text.includes(needle))) continue;
     const match = categories.find((category) => categoryTerms.some((term) => normalize(category.name).includes(term)));
-    if (match) return match.id;
+    if (match) {
+      return { categoryId: match.id, confidence: 'high', reason: `Matched keyword in ${match.name}` };
+    }
   }
-  return categories.find((category) => /misc/i.test(category.name))?.id ?? categories[0]?.id ?? '';
+
+  // 3. Fallback: Needs review
+  const fallbackId = categories.find((category) => /misc/i.test(category.name))?.id ?? categories[0]?.id ?? '';
+  return { categoryId: fallbackId, confidence: 'needs_review', reason: 'Category not recognized — please review' };
+}
+
+export function suggestCategory(description: string, categories: Category[], merchantMap?: Record<string, string>): string {
+  return suggestCategoryWithConfidence(description, categories, merchantMap).categoryId;
 }
 
 function dateToIso(raw: string): string | null {

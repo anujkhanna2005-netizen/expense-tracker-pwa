@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useIncomeStore } from '../stores/incomeStore';
 import type { Income } from '../types/income';
+import { calculateTotalIncome } from '../utils/calculations';
 
 export function useIncome() {
   const incomes = useIncomeStore((state) => state.incomes);
@@ -16,14 +17,15 @@ export function useIncome() {
   );
 
   const totalIncome = useMemo(
-    () => thisMonthIncomes.reduce((sum, i) => sum + i.amount, 0),
+    () => calculateTotalIncome(thisMonthIncomes),
     [thisMonthIncomes]
   );
 
-  /** Grouped by source for the current month */
+  /** Grouped by source for the current month (excluding internal transfers and reversals) */
   const incomeBySource = useMemo(() => {
     const map: Record<string, number> = {};
     thisMonthIncomes.forEach((i) => {
+      if (i.isTransfer || i.source.toLowerCase() === 'transfer' || i.isReversal || i.linkedExpenseId) return;
       map[i.source] = (map[i.source] || 0) + i.amount;
     });
     return Object.entries(map)

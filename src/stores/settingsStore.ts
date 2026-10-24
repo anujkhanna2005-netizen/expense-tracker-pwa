@@ -10,6 +10,7 @@ interface SettingsState {
   isFirstLaunch: boolean;
   updateSettings: (updates: Partial<Settings>) => boolean;
   updateCategoryBudget: (categoryId: string, limit: number) => boolean;
+  setMerchantCategory: (merchant: string, categoryId: string) => boolean;
   setIsFirstLaunch: (val: boolean) => void;
   resetSettings: () => void;
 }
@@ -18,6 +19,8 @@ const defaultSettings: Settings = {
   darkMode: false,
   currency: 'INR',
   categoryBudgets: {},
+  merchantCategoryMap: {},
+  autoImportHighConfidence: false,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -50,6 +53,14 @@ export const useSettingsStore = create<SettingsState>()(
         }
 
         return get().updateSettings({ categoryBudgets });
+      },
+
+      setMerchantCategory: (merchant, categoryId) => {
+        const key = merchant.trim().toLowerCase();
+        if (!key) return false;
+        const current = get().settings.merchantCategoryMap || {};
+        const updated = { ...current, [key]: categoryId };
+        return get().updateSettings({ merchantCategoryMap: updated });
       },
 
       setIsFirstLaunch: (val) => set({ isFirstLaunch: val }),
@@ -85,10 +96,12 @@ export const useSettingsStore = create<SettingsState>()(
 
 // Apply dark mode side effect
 useSettingsStore.subscribe((state) => {
-  if (state.settings.darkMode) {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  } else {
-    document.documentElement.removeAttribute('data-theme');
+  if (typeof document !== 'undefined' && document.documentElement) {
+    if (state.settings.darkMode) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
   }
 });
 
