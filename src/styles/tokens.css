@@ -1,49 +1,65 @@
 :root {
-  /* Brand & Status Colors - Light Mode */
-  --color-primary: #0EA5A0;
-  --color-primary-hover: #0D9488;
-  --color-primary-soft: rgba(14, 165, 160, 0.1);
-  --color-secondary: #6366F1;
-  --color-accent: #F59E0B;
-  --color-success: #10B981;
-  --color-success-hover: #059669;
-  --color-danger: #EF4444;
-  --color-warning: #F59E0B;
+  /* Brand & Status Colors - Emerald Wealth Design System */
+  --color-primary: #005c55;
+  --color-primary-container: #0f766e;
+  --color-primary-hover: #115e59;
+  --color-primary-soft: #ccfbf1;
+  --color-mint-highlight: #ccfbf1;
+  --color-mint-text: #0f766e;
+  --color-secondary: #216963;
+  --color-accent: #d97706;
+  --color-success: #059669;
+  --color-success-hover: #047857;
+  --color-danger: #dc2626;
+  --color-warning: #d97706;
+
+  /* Specific Category Palette */
+  --category-food: #d97706;
+  --category-groceries: #059669;
+  --category-bills: #2563eb;
+  --category-fuel: #ea580c;
+  --category-shopping: #7c3aed;
+  --category-health: #db2777;
 
   /* Surfaces & Backgrounds - Light Mode */
-  --surface-0: #FFFFFF;
-  --surface-1: #F8FAFC;
-  --surface-2: #F1F5F9;
-  --surface-3: #E2E8F0;
+  --canvas-bg: #fbfbfa;
+  --surface-card: #ffffff;
+  --surface-0: #ffffff;
+  --surface-1: #fbfbfa;
+  --surface-2: #eff4ff;
+  --surface-3: #e5eeff;
+  --surface-container-low: #eff4ff;
+  --surface-container: #e5eeff;
+  --surface-container-high: #dce9ff;
+  --surface-container-highest: #d3e4fe;
 
   /* Typography Colors - Light Mode */
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-tertiary: #6B7280;
+  --ink-primary: #111827;
+  --ink-secondary: #64748b;
+  --text-primary: #111827;
+  --text-secondary: #64748b;
+  --text-tertiary: #94a3b8;
+  --text-muted: #64748b;
 
-  /* Borders - Light Mode */
-  --border-default: #E2E8F0;
-  --border-color: #E2E8F0;
-
-  /* Spacing Mapping (index.css compatibility) */
-  --spacing-xs: var(--space-1);
-  --spacing-sm: var(--space-2);
-  --spacing-md: var(--space-4);
-  --spacing-lg: var(--space-6);
-  --spacing-xl: var(--space-8);
+  /* Borders & Dividers */
+  --border-subtle: #e2e8f0;
+  --border-default: #e2e8f0;
+  --border-color: #e2e8f0;
 
   /* Elevations */
-  --elevation-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --elevation-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --elevation-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+  --elevation-md: 0 4px 16px -4px rgba(15, 118, 110, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --elevation-lg: 0 12px 28px -6px rgba(15, 118, 110, 0.28);
   --shadow-sm: var(--elevation-sm);
   --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
+  --shadow-emerald: 0 8px 24px -4px rgba(15, 118, 110, 0.45);
 
-  /* Base color mapping (index.css compatibility) */
-  --bg-primary: var(--surface-1);
-  --bg-secondary: var(--surface-0);
-  --bg-tertiary: var(--surface-2);
-  --text-muted: var(--text-tertiary);
-  --accent-primary: var(--color-primary);
+  /* Compatibility mappings */
+  --bg-primary: var(--canvas-bg);
+  --bg-secondary: var(--surface-card);
+  --bg-tertiary: var(--surface-container-low);
+  --accent-primary: var(--color-primary-container);
   --accent-hover: var(--color-primary-hover);
   --danger: var(--color-danger);
   --success: var(--color-success);
@@ -56,7 +72,7 @@
   --radius-xl: 16px;
   --radius-full: 9999px;
 
-  /* Spacing System */
+  /* Spacing */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -64,60 +80,72 @@
   --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
+  --spacing-xs: var(--space-1);
+  --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-4);
+  --spacing-lg: var(--space-6);
+  --spacing-xl: var(--space-8);
 
-  /* Animations & Transitions */
+  /* Fonts */
+  --font-display: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Transitions */
   --duration-fast: 150ms;
   --duration-normal: 250ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 [data-theme="dark"] {
-  /* Brand & Status Colors - Dark Mode (brightened, contrast adjusted) */
-  --color-primary: #14B8A6;
-  --color-primary-hover: #2DD4BF;
-  --color-primary-soft: rgba(20, 184, 166, 0.15);
-  --color-secondary: #818CF8;
-  --color-accent: #FBBF24;
-  --color-success: #34D399;
-  --color-success-hover: #059669;
-  --color-danger: #F87171;
-  --color-warning: #FBBF24;
+  --color-primary: #14b8a6;
+  --color-primary-container: #0f766e;
+  --color-primary-hover: #2dd4bf;
+  --color-primary-soft: rgba(20, 184, 166, 0.18);
+  --color-mint-highlight: #134e4a;
+  --color-mint-text: #a3faef;
+  --color-secondary: #818cf8;
+  --color-accent: #fbbf24;
+  --color-success: #34d399;
+  --color-success-hover: #10b981;
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
 
-  /* Surfaces & Backgrounds - Dark Mode */
-  --surface-0: #0B1120;
-  --surface-1: #141F33;
-  --surface-2: #1A2A45;
-  --surface-3: #233552;
+  --canvas-bg: #0b1c30;
+  --surface-card: #142438;
+  --surface-0: #142438;
+  --surface-1: #0b1c30;
+  --surface-2: #1b2f48;
+  --surface-3: #223c5c;
+  --surface-container-low: #102136;
+  --surface-container: #172d47;
+  --surface-container-high: #203a5a;
+  --surface-container-highest: #28476e;
 
-  /* Typography Colors - Dark Mode */
-  --text-primary: #F8FAFC;
-  --text-secondary: #CBD5E1;
-  --text-tertiary: #94A3B8;
+  --ink-primary: #f8f9ff;
+  --ink-secondary: #94a3b8;
+  --text-primary: #f8f9ff;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --text-muted: #94a3b8;
 
-  /* Borders - Dark Mode */
-  --border-default: rgba(148, 163, 184, 0.15);
-  --border-color: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(226, 232, 240, 0.12);
+  --border-default: rgba(226, 232, 240, 0.12);
+  --border-color: rgba(226, 232, 240, 0.12);
 
-  /* Elevations - Dark Mode */
-  --elevation-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --elevation-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-  --shadow-sm: var(--elevation-sm);
-  --shadow-md: var(--elevation-md);
+  --elevation-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+  --elevation-md: 0 4px 16px -4px rgba(0, 0, 0, 0.5);
+  --elevation-lg: 0 12px 28px -6px rgba(0, 0, 0, 0.6);
 
-  /* Base color mapping - Dark Mode */
-  --bg-primary: var(--surface-1);
-  --bg-secondary: var(--surface-0);
-  --bg-tertiary: var(--surface-2);
-  --text-muted: var(--text-tertiary);
-  --accent-primary: var(--color-primary);
+  --bg-primary: var(--canvas-bg);
+  --bg-secondary: var(--surface-card);
+  --bg-tertiary: var(--surface-container-low);
+  --accent-primary: var(--color-primary-container);
   --accent-hover: var(--color-primary-hover);
   --danger: var(--color-danger);
   --success: var(--color-success);
   --warning: var(--color-warning);
 }
 
-/* Reduced Motion Utility */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

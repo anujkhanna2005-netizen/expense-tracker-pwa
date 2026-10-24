@@ -1,8 +1,21 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ReceiptText, CalendarClock, Target, Settings, Plus, TrendingUp, BarChart2, X } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  ReceiptText, 
+  CalendarClock, 
+  Target, 
+  Settings, 
+  Plus, 
+  TrendingUp, 
+  BarChart2, 
+  X,
+  Bell 
+} from 'lucide-react';
 import QuickAddExpense from './QuickAddExpense';
 import AddIncomeModal from './AddIncomeModal';
+import { ReviewCapturedModal } from './ReviewCapturedModal';
+import { useCapturedStore } from '../stores/capturedTransactionStore';
 import styles from './Layout.module.css';
 
 interface LayoutProps {
@@ -13,12 +26,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isQuickAddOpen, setIsQuickAddOpen] = React.useState(false);
   const [isAddIncomeOpen, setIsAddIncomeOpen] = React.useState(false);
   const [isFabMenuOpen, setIsFabMenuOpen] = React.useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = React.useState(false);
   const location = useLocation();
+
+  const pendingItems = useCapturedStore((state) => state.pendingItems);
 
   React.useEffect(() => {
     const handleOpen = () => setIsQuickAddOpen(true);
+    const handleOpenReview = () => setIsReviewModalOpen(true);
     window.addEventListener('openAddExpense', handleOpen);
-    return () => window.removeEventListener('openAddExpense', handleOpen);
+    window.addEventListener('openReviewCaptured', handleOpenReview);
+    return () => {
+      window.removeEventListener('openAddExpense', handleOpen);
+      window.removeEventListener('openReviewCaptured', handleOpenReview);
+    };
   }, []);
 
   // Close FAB menu on route change
@@ -34,6 +55,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/reports', label: 'Reports', icon: BarChart2 },
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
+
+  const getPageTitle = () => {
+    switch (location.pathname) {
+      case '/dashboard': return 'Dashboard';
+      case '/expenses': return 'Expenses';
+      case '/bills': return 'Bills';
+      case '/goals': return 'Goals';
+      case '/reports': return 'Reports';
+      case '/settings': return 'Settings';
+      default: return 'Overview';
+    }
+  };
 
   /** Routes where the FAB shows expense/income choice */
   const isExpenseIncomeRoute =
@@ -58,11 +91,46 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         Skip to main content
       </a>
 
+      {/* Top Header Bar */}
+      <header className={styles.header}>
+        <div className={styles.headerLeft}>
+          <div className={styles.headerLogoIcon}>💰</div>
+          <div className={styles.headerTitleGroup}>
+            <span className={styles.headerBrand}>Expense Tracker</span>
+            <span className={styles.headerSubtitle}>{getPageTitle()}</span>
+          </div>
+        </div>
+
+        <div className={styles.headerRight}>
+          <button
+            type="button"
+            className={styles.headerBellBtn}
+            onClick={() => setIsReviewModalOpen(true)}
+            aria-label="Pending UPI Notifications"
+          >
+            <Bell size={20} />
+            {pendingItems.length > 0 && (
+              <span className={styles.bellBadge}>
+                <span className={styles.bellBadgePing} />
+                <span className={styles.bellBadgeDot} />
+              </span>
+            )}
+          </button>
+
+          <NavLink to="/settings" className={styles.headerProfileBtn} aria-label="Profile Settings">
+            <span className={styles.avatarCircle}>AK</span>
+          </NavLink>
+        </div>
+      </header>
+
       {/* Sidebar for Desktop */}
       <aside className={styles.sidebar}>
         <div className={styles.logo}>
           <span className={styles.logoIcon} aria-hidden="true">💰</span>
-          <h2>Expense Tracker</h2>
+          <div>
+            <h2>Expense Tracker</h2>
+            <span className={styles.logoSubtext}>RupeeWise Emerald</span>
+          </div>
         </div>
         
         <nav className={styles.nav}>
@@ -74,6 +142,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             >
               <item.icon className={styles.icon} size={20} />
               <span>{item.label}</span>
+              {item.path === '/dashboard' && pendingItems.length > 0 && (
+                <span className={styles.sidebarBadge}>{pendingItems.length}</span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -86,13 +157,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </main>
 
-      {/* FAB — context-aware */}
+      {/* Floating Action Button (Centered above mobile bottom bar) */}
       {location.pathname !== '/settings' && (
         <div className={styles.fabWrapper}>
           {/* Popover menu for expense/income choice */}
           {isFabMenuOpen && isExpenseIncomeRoute && (
             <>
-              {/* Backdrop to close menu */}
               <div
                 className={styles.fabBackdrop}
                 onClick={() => setIsFabMenuOpen(false)}
@@ -107,7 +177,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     setIsAddIncomeOpen(true);
                   }}
                 >
-                  <span className={styles.fabMenuItemIcon} style={{ background: 'var(--color-primary-soft)', color: 'var(--color-success)' }}>
+                  <span className={styles.fabMenuItemIcon} style={{ background: 'var(--color-mint-highlight)', color: 'var(--status-income)' }}>
                     <TrendingUp size={18} />
                   </span>
                   <span>Add Income</span>
@@ -120,7 +190,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     setIsQuickAddOpen(true);
                   }}
                 >
-                  <span className={styles.fabMenuItemIcon} style={{ background: 'rgba(99,102,241,0.12)', color: 'var(--accent-primary)' }}>
+                  <span className={styles.fabMenuItemIcon} style={{ background: 'var(--surface-container-high)', color: 'var(--color-primary-container)' }}>
                     <ReceiptText size={18} />
                   </span>
                   <span>Add Expense</span>
@@ -132,30 +202,56 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <button
             className={`${styles.fab} ${isFabMenuOpen ? styles.fabOpen : ''}`}
             onClick={handleFabClick}
-            aria-label={isFabMenuOpen ? 'Close menu' : 'Add'}
+            aria-label={isFabMenuOpen ? 'Close menu' : 'Add Transaction'}
             aria-expanded={isFabMenuOpen}
           >
-            {isFabMenuOpen ? <X size={28} /> : <Plus size={28} />}
+            {isFabMenuOpen ? <X size={26} /> : <Plus size={26} />}
           </button>
         </div>
       )}
 
-      {/* Bottom Navigation for Mobile */}
+      {/* Bottom Navigation for Mobile (5-slot layout with center FAB slot) */}
       <nav className={styles.bottomNav}>
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => `${styles.bottomNavItem} ${isActive ? styles.active : ''}`}
-          >
-            <item.icon size={20} />
-            <span className={styles.bottomNavLabel}>{item.label}</span>
-          </NavLink>
-        ))}
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) => `${styles.bottomNavItem} ${isActive ? styles.active : ''}`}
+        >
+          <LayoutDashboard size={20} />
+          <span className={styles.bottomNavLabel}>Home</span>
+        </NavLink>
+
+        <NavLink
+          to="/expenses"
+          className={({ isActive }) => `${styles.bottomNavItem} ${isActive ? styles.active : ''}`}
+        >
+          <ReceiptText size={20} />
+          <span className={styles.bottomNavLabel}>Expenses</span>
+        </NavLink>
+
+        {/* Center Empty Spacer for Floating Action Button */}
+        <div className={styles.bottomNavSpacer} />
+
+        <NavLink
+          to="/reports"
+          className={({ isActive }) => `${styles.bottomNavItem} ${isActive ? styles.active : ''}`}
+        >
+          <BarChart2 size={20} />
+          <span className={styles.bottomNavLabel}>Reports</span>
+        </NavLink>
+
+        <NavLink
+          to="/settings"
+          className={({ isActive }) => `${styles.bottomNavItem} ${isActive ? styles.active : ''}`}
+        >
+          <Settings size={20} />
+          <span className={styles.bottomNavLabel}>Settings</span>
+        </NavLink>
       </nav>
 
+      {/* Modals */}
       <QuickAddExpense isOpen={isQuickAddOpen} onClose={() => setIsQuickAddOpen(false)} />
       <AddIncomeModal isOpen={isAddIncomeOpen} onClose={() => setIsAddIncomeOpen(false)} />
+      <ReviewCapturedModal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} />
     </div>
   );
 };

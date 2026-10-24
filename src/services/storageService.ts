@@ -3,14 +3,16 @@ import { encryptionService } from './encryptionService';
 import { useUiStore } from '../stores/uiStore';
 
 // Explicitly configure localforage to guarantee clean initialization
-localforage.config({
-  name: 'expense-tracker-pwa-db',
-  storeName: 'expense_tracker_store',
-  driver: [
-    localforage.INDEXEDDB,
-    localforage.LOCALSTORAGE
-  ]
-});
+if (typeof window !== 'undefined') {
+  localforage.config({
+    name: 'expense-tracker-pwa-db',
+    storeName: 'expense_tracker_store',
+    driver: [
+      localforage.INDEXEDDB,
+      localforage.LOCALSTORAGE
+    ]
+  });
+}
 
 export class StorageQuotaError extends Error {
   constructor(message = 'Storage quota exceeded') {
@@ -34,8 +36,14 @@ function isQuotaError(err: any): boolean {
   return false;
 }
 
+const memStore = new Map<string, any>();
+const isNodeEnv = typeof window === 'undefined' || (typeof indexedDB === 'undefined' && typeof localStorage === 'undefined');
+
 export const storageService = {
   async get<T>(key: string): Promise<T | null> {
+    if (isNodeEnv) {
+      return (memStore.get(key) as T) || null;
+    }
     try {
       const raw = await localforage.getItem<any>(key);
       if (key === 'settings' && raw) {
@@ -80,6 +88,10 @@ export const storageService = {
   },
 
   async set<T>(key: string, value: T): Promise<T> {
+    if (isNodeEnv) {
+      memStore.set(key, value);
+      return value;
+    }
     try {
       if (key === 'settings') {
         const settingsValue = (value as any)?.state?.settings;
@@ -128,6 +140,10 @@ export const storageService = {
   },
 
   async remove(key: string): Promise<void> {
+    if (isNodeEnv) {
+      memStore.delete(key);
+      return;
+    }
     try {
       await localforage.removeItem(key);
     } catch (error) {
